@@ -2,9 +2,9 @@
 	"name": "industry_context_service",
 	"type": "module",
 	"scripts": {
-		"dev": "tsx watch src/index.ts",
+		"dev": "tsx watch src/server.ts",
 		"build": "tsc",
-		"start": "node dist/index.js",
+		"start": "node dist/server.js",
 		"format": "biome format . --write",
 		"lint": "biome check .",
 		"lint:fix": "biome check . --write"
