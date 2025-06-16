@@ -4,28 +4,30 @@ import path from "node:path";
 import { z } from "zod";
 
 expand(
-  config({
-    path: path.resolve(
-      process.cwd(),
-      process.env.NODE_ENV === "test" ? ".env.test" : ".env",
-    ),
-  }),
+	config({
+		path: path.resolve(
+			process.cwd(),
+			process.env.NODE_ENV === "test" ? ".env.test" : ".env",
+		),
+	}),
 );
 
 const EnvSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "test", "production"])
-    .default("development"),
-  PORT: z.coerce.number().default(8004),
+	NODE_ENV: z
+		.enum(["development", "test", "production"])
+		.default("development"),
+	PORT: z.coerce.number().default(8004),
+	PINECONE_API_KEY: z.string(),
+	OPENAI_API_KEY: z.string(),
 });
 
 // Validate env vars
 const parsed = EnvSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error("Invalid environment variables:");
-  console.error(JSON.stringify(parsed.error.flatten().fieldErrors, null, 2));
-  process.exit(1);
+	console.error("Invalid environment variables:");
+	console.error(JSON.stringify(parsed.error.flatten().fieldErrors, null, 2));
+	process.exit(1);
 }
 
 const env = parsed.data;
