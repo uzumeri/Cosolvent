@@ -18,6 +18,7 @@ const EnvSchema = z.object({
 		.default("development"),
 	PORT: z.coerce.number().default(8004),
 	PINECONE_API_KEY: z.string(),
+	PINECONE_INDEX_NAME: z.string(),
 	OPENAI_API_KEY: z.string(),
 });
 
