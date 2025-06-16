@@ -5,13 +5,15 @@ class LLMPROFILEGENERATION:
     Mock LLM for profile generation.
     """
 
-    def __init__(self, cur_profile, metadata):
+    def __init__(self, cur_profile, metadata, user_id):
         self.cur_profile = cur_profile
         self.metadata = metadata
+        self.user_id = user_id
 
     def generate_profile(self):
+        print("Generating profile using mock LLM...")
         return FarmerProfileModel(
-            user_id=self.cur_profile["user_id"],
+            user_id=self.user_id,
             farm_name="Prairie Grain Co.",
             contact_person="John Doe",
             description="Family-owned grain farm specializing in organic wheat and barley.",
@@ -44,3 +46,8 @@ class LLMPROFILEGENERATION:
             ],
             status='pending'
         )
+    def farmer_model_to_dict(self):
+        """
+        Convert the FarmerProfileModel to a dictionary.
+        """
+        return self.generate_profile().dict() if hasattr(self.generate_profile(), 'dict') else self.generate_profile()

@@ -22,7 +22,7 @@ async def publish_profile_generated_event(message):
                 ),
                 routing_key=QueueEventNames.profile_generation_completed
             )
-        logging.info(f"Profile generation Event sent successfully for user_id:  {message.get('user_id')}")
+        logging.info(f"Profile generated Event sent successfully for user_id:  {message.get('user_id')}")
     except Exception as e:
         logging.error(f"Failed to send profile generated event: {e}")
         raise  # Re-raise to trigger retry

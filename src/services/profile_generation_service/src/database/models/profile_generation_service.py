@@ -141,6 +141,13 @@ class FarmerProfileModel(BaseModel):
     communication: CommunicationModel = Field(default_factory=CommunicationModel)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = None
+
+    def to_dict(self) -> dict:
+        """
+        Serialize the Pydantic model to a Python dict.
+        """
+        # Use Pydantic's dict() for conversion
+        return self.dict()
     status: Literal['pending', 'approved', 'rejected'] = 'pending'
 
 

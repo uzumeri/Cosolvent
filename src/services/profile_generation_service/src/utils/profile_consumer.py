@@ -11,6 +11,7 @@ from shared.events import QueueEventNames
 from src.utils.mock_profile_generation_llm import LLMPROFILEGENERATION
 from src.utils.publisher import publish_profile_generated_event
 import sys
+from datetime import date, datetime
 
 # Configure logging
 handler = logging.StreamHandler(sys.stdout)
@@ -33,14 +34,26 @@ async def process_metadata(message: aio_pika.IncomingMessage):
             # Fetch existing metadata and profile
             metadata = await PROFILECRUD.get_metadata_by_asset_id(asset_id)
             cur_profile = await PROFILECRUD.get_by_id(asset_id)
-            print('the current profile is', cur_profile)
-            print('the metadata is', metadata)
             # Generate new profile via mock LLM
-            llm = LLMPROFILEGENERATION(cur_profile, metadata)
+            llm = LLMPROFILEGENERATION(cur_profile, metadata, user_id)
             generated_profile = llm.generate_profile()
-            # Convert to dict if Pydantic model
+            
+            # Serialize date objects to datetime for MongoDB compatibility
+            def convert_dates(obj):
+                from datetime import date, datetime as dt
+                if isinstance(obj, dict):
+                    return {k: convert_dates(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [convert_dates(v) for v in obj]
+                elif isinstance(obj, date) and not isinstance(obj, dt):
+                    return dt.combine(obj, dt.min.time())
+                else:
+                    return obj
+
             profile_data = generated_profile.dict() if hasattr(generated_profile, 'dict') else generated_profile
+            profile_data = convert_dates(profile_data)
             await PROFILECRUD.create(profile_data)
+            print("heyyyy")
             await publish_profile_generated_event({
                 "user_id": user_id,
             })

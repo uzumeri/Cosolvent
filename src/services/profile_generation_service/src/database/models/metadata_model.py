@@ -7,6 +7,7 @@ class AssetModel:
         self.url = asset.get("url")
         # include file_type if present
         self.file_type = asset.get("file_type", None)
+        self.metadata = asset.get("metadata", {})
 
     def to_dict(self) -> dict:
         return {
@@ -17,6 +18,6 @@ class AssetModel:
             "url": self.url,
             "file_type": self.file_type,
             "metadata": {
-                "description": None  # Default value, can be updated later
+                "description": self.metadata["description"]  # Default value, can be updated later
             }
         }
