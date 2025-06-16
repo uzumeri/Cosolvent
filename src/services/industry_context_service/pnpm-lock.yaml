@@ -11,6 +11,21 @@ importers:
       '@hono/node-server':
         specifier: ^1.14.4
         version: 1.14.4(hono@4.7.11)
+      '@langchain/core':
+        specifier: ^0.3.58
+        version: 0.3.58(openai@4.104.0(zod@3.25.64))
+      '@langchain/langgraph':
+        specifier: ^0.3.3
+        version: 0.3.3(@langchain/core@0.3.58(openai@4.104.0(zod@3.25.64)))(zod-to-json-schema@3.24.5(zod@3.25.64))
+      '@langchain/openai':
+        specifier: ^0.5.13
+        version: 0.5.13(@langchain/core@0.3.58(openai@4.104.0(zod@3.25.64)))
+      '@langchain/pinecone':
+        specifier: ^0.2.0
+        version: 0.2.0(@langchain/core@0.3.58(openai@4.104.0(zod@3.25.64)))(@pinecone-database/pinecone@5.1.2)
+      '@pinecone-database/pinecone':
+        specifier: ^5.1.2
+        version: 5.1.2
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
@@ -20,6 +35,12 @@ importers:
       hono:
         specifier: ^4.7.11
         version: 4.7.11
+      http-status-codes:
+        specifier: ^2.3.0
+        version: 2.3.0
+      uuid:
+        specifier: ^11.1.0
+        version: 11.1.0
       zod:
         specifier: ^3.25.64
         version: 3.25.64
@@ -437,8 +458,8 @@ packages:
   '@types/node-fetch@2.6.12':
     resolution: {integrity: sha512-8nneRWKCg3rMtF69nLQJnOYUcbafYeFSjqkw3jCRLsqkWFlHaoQrr5mXmofFGOx3DKn7UfmBMyov8ySvLRVldA==}
 
-  '@types/node@18.19.111':
-    resolution: {integrity: sha512-90sGdgA+QLJr1F9X79tQuEut0gEYIfkX9pydI4XGRgvFo9g2JWswefI+WUSUHPYVBHYSEfTEqBxA5hQvAZB3Mw==}
+  '@types/node@18.19.112':
+    resolution: {integrity: sha512-i+Vukt9POdS/MBI7YrrkkI5fMfwFtOjphSmt4WXYLfwqsfr6z/HdCx7LqT9M7JktGob8WNgj8nFB4TbGNE4Cog==}
 
   '@types/node@20.19.0':
     resolution: {integrity: sha512-hfrc+1tud1xcdVTABC2JiomZJEklMcXYNTVtZLAeqTVWD+qL5jkHKT+1lOtqDdGxt+mB53DTtiz673vfjU8D1Q==}
@@ -561,6 +582,14 @@ packages:
       supports-color:
         optional: true
 
+  decamelize@1.2.0:
+    resolution: {integrity: sha512-z2S+W9X73hAUUki+N+9Za2lBlun89zigOyGrsax+KUQ6wKW4ZoWpEYBkGhQjwAjjDCkWxhY0VKEhk8wzY7F5cA==}
+    engines: {node: '>=0.10.0'}
+
+  delayed-stream@1.0.0:
+    resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
+    engines: {node: '>=0.4.0'}
+
   dotenv-expand@12.0.2:
     resolution: {integrity: sha512-lXpXz2ZE1cea1gL4sz2Ipj8y4PiVjytYr3Ij0SWoms1PGxIv7m2CRKuRuCRtHdVuvM/hNJPMxt5PbhboNC4dPQ==}
     engines: {node: '>=12'}
@@ -568,6 +597,10 @@ packages:
   dotenv@16.5.0:
     resolution: {integrity: sha512-m/C+AwOAr9/W1UOIZUo232ejMNnJAJtYQjUbHoNTBNTJSvqzzDh7vnrei3o3r3m9blf6ZoDkvcw0VmozNRFJxg==}
     engines: {node: '>=12'}
+
+  dunder-proto@1.0.1:
+    resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
+    engines: {node: '>= 0.4'}
 
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
@@ -1038,6 +1071,14 @@ packages:
     resolution: {integrity: sha512-si7QWI6zUMq56bESFvagtmzMdGOtoxfR+Sez11Mobfc7tm+VkUckk9bW2UeffTGVUbOksxmSw0AA2gs8g71NCQ==}
     engines: {node: '>=12'}
 
+  zod-to-json-schema@3.24.5:
+    resolution: {integrity: sha512-/AuWwMP+YqiPbsJx5D6TfgRTc4kTLjsh5SOcd4bLsfUg2RcEXrFMJl1DGgdHy2aCfsIA/cr/1JM0xcB2GZji8g==}
+    peerDependencies:
+      zod: ^3.24.1
+
+  zod@3.25.32:
+    resolution: {integrity: sha512-OSm2xTIRfW8CV5/QKgngwmQW/8aPfGdaQFlrGoErlgg/Epm7cjb6K6VEyExfe65a3VybUOnu381edLb0dfJl0g==}
+
   zod@3.25.64:
     resolution: {integrity: sha512-hbP9FpSZf7pkS7hRVUrOjhwKJNyampPgtXKc3AN6DsWtoHsg2Sb4SQaS4Tcay380zSwd2VPo9G9180emBACp5g==}
 
@@ -1319,7 +1360,7 @@ snapshots:
       '@types/node': 20.19.0
       form-data: 4.0.3
 
-  '@types/node@18.19.111':
+  '@types/node@18.19.112':
     dependencies:
       undici-types: 5.26.5
 
@@ -1418,11 +1459,21 @@ snapshots:
     dependencies:
       ms: 2.1.3
 
+  decamelize@1.2.0: {}
+
+  delayed-stream@1.0.0: {}
+
   dotenv-expand@12.0.2:
     dependencies:
       dotenv: 16.5.0
 
   dotenv@16.5.0: {}
+
+  dunder-proto@1.0.1:
+    dependencies:
+      call-bind-apply-helpers: 1.0.2
+      es-errors: 1.3.0
+      gopd: 1.2.0
 
   eastasianwidth@0.2.0: {}
 
@@ -1650,7 +1701,7 @@ snapshots:
 
   openai@4.104.0(zod@3.25.32):
     dependencies:
-      '@types/node': 18.19.111
+      '@types/node': 18.19.112
       '@types/node-fetch': 2.6.12
       abort-controller: 3.0.0
       agentkeepalive: 4.6.0
@@ -1664,7 +1715,7 @@ snapshots:
 
   openai@4.104.0(zod@3.25.64):
     dependencies:
-      '@types/node': 18.19.111
+      '@types/node': 18.19.112
       '@types/node-fetch': 2.6.12
       abort-controller: 3.0.0
       agentkeepalive: 4.6.0
@@ -1913,5 +1964,11 @@ snapshots:
       ansi-styles: 6.2.1
       string-width: 5.1.2
       strip-ansi: 7.1.0
+
+  zod-to-json-schema@3.24.5(zod@3.25.64):
+    dependencies:
+      zod: 3.25.64
+
+  zod@3.25.32: {}
 
   zod@3.25.64: {}

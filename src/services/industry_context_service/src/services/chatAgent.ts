@@ -47,13 +47,13 @@ const trimmer = trimMessages({
 const basePromptTemplate = ChatPromptTemplate.fromMessages([
 	[
 		"system",
-		`You are a helpful assistant that answers questions using provided context.
+		`You are a helpful assistant that answers questions.
 			Follow these rules:
-			0. Make a tool call to the retrieve tool
-			1. If context is provided, use it to answer
-			2. If no context is relevant, say you don't know
-			3. Be concise and factual
-			4. For follow-up questions, maintain conversation context
+			1. Make a tool call to get relevant context
+			2. If context is provided, use it to answer
+			3. If no context is relevant, say you don't know
+			4. Be concise and factual
+			5. For follow-up questions, maintain conversation context
 		Context: {context}`,
 	],
 	["placeholder", "{messages}"],
