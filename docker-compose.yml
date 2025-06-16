@@ -86,14 +86,20 @@ services:
 
   industry_context_service:
     build:
-      context: .
-      dockerfile: src/services/industry_context_service/Dockerfile
+      context: ./src/services/industry_context_service
+      dockerfile: Dockerfile
     ports:
-      - "8004:8004"
+      - "${INDUSTRY_CONTEXT_SERVICE_PORT}:${INDUSTRY_CONTEXT_SERVICE_PORT}"
     depends_on:
       - redis
       - rabbitmq
       - mongodb
+    environment:
+      - NODE_ENV=production
+      - PORT=${INDUSTRY_CONTEXT_SERVICE_PORT}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME}
     networks:
       - app_network
 
