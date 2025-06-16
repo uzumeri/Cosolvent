@@ -1,7 +1,7 @@
+import env from "@/config/env";
+import type { EmbeddingsInterface } from "@langchain/core/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
 import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
-import type { EmbeddingsInterface } from "@langchain/core/embeddings";
-import env from "@/config/env";
 
 const newPineconeStore = async (
 	embeddings: EmbeddingsInterface,
