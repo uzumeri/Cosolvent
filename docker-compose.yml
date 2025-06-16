@@ -97,6 +97,8 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=${INDUSTRY_CONTEXT_SERVICE_PORT}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PINECONE_API_KEY==${PINECONE_API_KEY}
     networks:
       - app_network
 
