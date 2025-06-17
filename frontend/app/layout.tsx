@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Roboto } from "next/font/google";
 import "./globals.css";
 import Chatbot from "@/components/chatbot/chatbot";
-import { QueryClientProvider } from "@tanstack/react-query";
-import queryClient from "@/lib/query/queryClient";
+import { QueryProvider } from "@/lib/query/queryProvider";
 
 const roboto = Roboto({
 	variable: "--font-roboto",
@@ -31,15 +30,15 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<QueryClientProvider client={queryClient}>
-			<html lang="en">
-				<body
-					className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} antialiased`}
-				>
+		<html lang="en">
+			<body
+				className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} antialiased`}
+			>
+				<QueryProvider>
 					<Chatbot />
 					{children}
-				</body>
-			</html>
-		</QueryClientProvider>
+				</QueryProvider>
+			</body>
+		</html>
 	);
 }
