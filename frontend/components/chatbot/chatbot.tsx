@@ -2,7 +2,6 @@
 
 import type React from "react";
 
-import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, scrollToBottom } from "@/lib/utils";
 import { Bot, MessageCircle, Send, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 type ChatMessage = {
 	id: string;
