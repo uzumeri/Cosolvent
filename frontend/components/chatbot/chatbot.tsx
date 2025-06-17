@@ -10,6 +10,7 @@ import { cn, scrollToBottom } from "@/lib/utils";
 import { Bot, MessageCircle, Send, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import ToolTip from "./toolTip";
 
 type ChatMessage = {
 	id: string;
@@ -19,10 +20,16 @@ type ChatMessage = {
 
 export default function Chatbot() {
 	const [isOpen, setIsOpen] = useState(false);
+	const [showTooltip, setShowTooltip] = useState(true);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 	const [question, setQuestion] = useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
+
+	const handleChatToggle = () => {
+		setIsOpen(!isOpen);
+		setShowTooltip(false);
+	};
 
 	const handleQuessionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setQuestion(() => e.target.value);
@@ -48,13 +55,22 @@ export default function Chatbot() {
 
 	return (
 		<>
+			{/* Animated Tooltip/indicator */}
+			{showTooltip && !isOpen && (
+				<ToolTip
+					text="Need help?"
+					showTooltip={showTooltip}
+					setShowTooltip={setShowTooltip}
+				/>
+			)}
 			{/* Floating Chat Button */}
 			<Button
-				onClick={() => setIsOpen(!isOpen)}
+				onClick={handleChatToggle}
 				className={cn(
 					"fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg transition-all duration-300 z-50",
 					"bg-black hover:bg-gray-800 text-white",
 					isOpen && "rotate-180",
+					showTooltip && !isOpen && "animate-pulse",
 				)}
 				size="icon"
 			>
@@ -67,7 +83,7 @@ export default function Chatbot() {
 
 			{/* Chat Window */}
 			{isOpen && (
-				<Card className="fixed bottom-24 right-6 w-80 h-96 shadow-2xl z-40 animate-in slide-in-from-bottom-2 duration-300">
+				<Card className="font-sans fixed bottom-24 right-6 w-80 h-96 shadow-2xl z-40 animate-in slide-in-from-bottom-2 duration-300">
 					<CardHeader className="pb-3">
 						<CardTitle className="flex items-center gap-2 text-lg">
 							<Bot className="h-5 w-5 text-black" />
@@ -82,8 +98,8 @@ export default function Chatbot() {
 								{chatHistory.length === 0 && (
 									<div className="text-center text-gray-500 text-sm py-8">
 										<Bot className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-										<p>Hi! I&apos;m your AgriSupport AI.</p>
-										<p>Ask me about farming, crops, soil, or plant care!</p>
+										<p>Hi! I&apos;m here to help.</p>
+										<p>Ask me anything about the industry!</p>
 									</div>
 								)}
 
