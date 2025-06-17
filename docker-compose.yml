@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # ─── Infrastructure ───────────────────────────────────────────────────────
@@ -35,7 +35,18 @@ services:
         aliases:
           - mongo
           - mongodb
-    
+
+  # ─── Frontend ─────────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway
+    networks:
+      - app_network
 
   # ─── Application Services ─────────────────────────────────────────────────
 
@@ -137,7 +148,7 @@ services:
     environment:
       - MONGO_URI=mongodb://mongodb:27017
     env_file:
-      - .env    
+      - .env
     depends_on:
       - redis
       - rabbitmq
@@ -203,8 +214,8 @@ services:
     image: minio/minio:latest
     container_name: UploadServer
     ports:
-      - "${S3_API_PORT}:9000"  # S3 API Port
-      - "${S3_WEB_PORT}:9001"   # Web UI
+      - "${S3_API_PORT}:9000" # S3 API Port
+      - "${S3_WEB_PORT}:9001" # Web UI
     env_file:
       - .env
     volumes:
