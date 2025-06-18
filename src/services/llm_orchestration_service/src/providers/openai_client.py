@@ -28,8 +28,6 @@ class OpenAIClient(LLMClient):
         
         image_bytes = kwargs.pop("image_bytes", None)
         
-        # Correctly typed messages list
-        # The top-level message content is a list of these parts.
         message_parts: List[MessageContentPart] = [] 
         message_parts.append({"type": "text", "text": prompt})
 
@@ -39,7 +37,49 @@ class OpenAIClient(LLMClient):
             message_parts.append({
                 "type": "image_url",
                 "image_url": {
-                    "url": f"data:image/jpeg;base64,{base64_image}", # Assuming JPEG
+                    "url": f"data:image/jpeg;base64,{base64_image}",
+                }
+            })
+        elif image_bytes:
+            logger.warning(f"Model {self.config.model} does not support images. Image data will be ignored.")
+
+        api_messages = [
+            {
+                "role": "user",
+                "content": message_parts
+            }
+        ]
+
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.config.model,
+                messages=api_messages, # type: ignore
+                **kwargs
+            )
+            content = response.choices[0].message.content
+            if content is None:
+                raise LLMApiException(self.config.name, Exception("No content in response"))
+            logger.info(f"Successfully received response from OpenAI model '{self.config.model}'")
+            return content
+        except Exception as e:
+            logger.error(f"Error calling OpenAI model '{self.config.model}': {e}")
+            raise LLMApiException(provider_name=self.config.name, original_exception=e)
+
+    async def call_vision_model(self, prompt: str, image_bytes: bytes, **kwargs) -> str:
+        logger.info(f"Calling OpenAI vision model '{self.config.model}' for provider '{self.config.name}'")
+
+        # Correctly typed messages list
+        # The top-level message content is a list of these parts.
+        message_parts: List[MessageContentPart] = []
+        message_parts.append({"type": "text", "text": prompt})
+
+        if image_bytes and self.config.model in ["gpt-4-vision-preview", "gpt-4o", "gpt-4-turbo"]:
+            logger.info(f"Processing image for model {self.config.model}")
+            base64_image = base64.b64encode(image_bytes).decode('utf-8')
+            message_parts.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{base64_image}",  # Assuming JPEG
                     # "detail": "high" # Optional: can be 'low', 'high', or 'auto'
                 }
             })
@@ -95,7 +135,7 @@ class OpenAIClient(LLMClient):
                 return transcription_response
             # For response_format='json' or 'verbose_json', it's an object with a 'text' attribute
             elif hasattr(transcription_response, 'text'):
-                return transcription_response.text # type: ignore
+                return transcription_response.text # 
             else:
                 # Fallback if the response structure is unexpected
                 logger.error(f"Unexpected STT response format: {type(transcription_response)}. Content: {str(transcription_response)[:200]}")

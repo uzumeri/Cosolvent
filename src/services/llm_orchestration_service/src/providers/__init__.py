@@ -2,17 +2,12 @@
 from typing import Dict, Type
 from .base import LLMClient
 from .openai_client import OpenAIClient
-from .google_client import GoogleClient
-from .hf_client import HuggingFaceClient
 from ..config.models import ProviderConfig
 from ..core.exceptions import ProviderNotFoundException
 
 # Registry of available provider clients
 _provider_clients: Dict[str, Type[LLMClient]] = {
     "openai": OpenAIClient,
-    "google": GoogleClient,
-    "huggingface": HuggingFaceClient,
-    # Add other providers here as they are implemented
 }
 
 # Cache for instantiated clients to reuse them
@@ -23,7 +18,12 @@ async def get_client(provider_name: str, config: ProviderConfig) -> LLMClient:
     Factory function to get an initialized LLM client instance.
     Caches instances to avoid re-initializing on every call.
     """
-    normalized_provider_name = provider_name.lower()
+    # This logic handles variations like 'openai_gpt4' by mapping to 'openai'
+    if "openai" in provider_name.lower():
+        normalized_provider_name = "openai"
+    else:
+        normalized_provider_name = provider_name.lower()
+
 
     if normalized_provider_name in _client_instances:
         # TODO: Add logic to check if config has changed and re-initialize if necessary
