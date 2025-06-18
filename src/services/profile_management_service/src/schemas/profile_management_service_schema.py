@@ -154,8 +154,8 @@ class ProfileResponse(BaseModel):
     id: str = Field(..., alias="_id")
 
     basic_info: BasicProfileBase
-    active_profile: Optional[DetailFarmerProfileModel] = {}
-    draft_profile: Optional[DetailFarmerProfileModel] = {}
+    active_profile: Optional[DetailFarmerProfileModel] = Field(default_factory=dict)
+    draft_profile: Optional[DetailFarmerProfileModel] = Field(default_factory=dict)
 
 class BasicProfileResponse(BaseModel):
     id: str = Field(..., alias="_id")
