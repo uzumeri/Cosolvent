@@ -7,8 +7,8 @@
           "api_key": "OPENAI_API_KEY_PLACEHOLDER",
           "model": "gpt-4o"
         },
-        "openai_whisper_1": {
-          "name": "openai_whisper_1",
+        "openai_whisper_2": {
+          "name": "openai_whisper_2",
           "api_key": "OPENAI_API_KEY_PLACEHOLDER",
           "model": "whisper-1"
         }
@@ -66,7 +66,7 @@
           }
         },
         "audio_processing": {
-          "stt_provider": "openai_whisper_1",
+          "stt_provider": "openai_whisper_2",
           "stt_options": {
             "response_format": "text"
           },
@@ -79,7 +79,7 @@
           }
         },
         "video_processing": {
-          "stt_provider": "openai_whisper_1",
+          "stt_provider": "openai_whisper_2",
           "stt_options": {
             "response_format": "text" 
           },
