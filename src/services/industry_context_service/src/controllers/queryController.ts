@@ -2,6 +2,8 @@ import chatService from "@/services/chatService";
 import { errorResponse, successResponse } from "@/utils/response";
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
+import type Redis from "ioredis";
+import type { Db } from "mongodb";
 import { z } from "zod";
 
 const QueryRequestSchema = z.object({
@@ -9,7 +11,7 @@ const QueryRequestSchema = z.object({
 	threadId: z.string().min(1),
 });
 
-const queryPostController = async (c: Context) => {
+const queryPostController = async (c: Context, db: Db, redis: Redis) => {
 	const reqBody = await c.req.json();
 	const parsedBody = QueryRequestSchema.safeParse(reqBody);
 
@@ -25,7 +27,7 @@ const queryPostController = async (c: Context) => {
 	const { threadId, question } = reqBody;
 
 	try {
-		const response = await chatService({ threadId, question });
+		const response = await chatService(db, redis, { threadId, question });
 		const { status, body } = successResponse(response);
 		return c.json(body, status);
 	} catch (error) {

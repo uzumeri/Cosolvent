@@ -12,7 +12,7 @@ const main = async () => {
 
 	app.route("/", indexRoutes);
 	app.route("/admin", adminRoutes(db, redis));
-	app.route("/query", queryRoutes);
+	app.route("/query", queryRoutes(db, redis));
 
 	return app;
 };
