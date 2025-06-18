@@ -1,7 +1,19 @@
 from pydantic import BaseModel, Field, HttpUrl
 from typing import List, Optional, Literal
 from datetime import date, datetime
+import logging
 
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class BasicProfileBase(BaseModel):
+    user_id: str
+    first_name: str
+    middle_name: str
+    last_name: str
+    birth_date: datetime
+    phone_number: str
 
 class CoordinateModel(BaseModel):
     longitude: float
@@ -10,7 +22,7 @@ class CoordinateModel(BaseModel):
 
 class MediaModel(BaseModel):
     url: HttpUrl
-    type: Literal['image', 'pdf', 'video', 'other']
+    type: Literal['image', 'pdf', 'video', 'other', 'docx', 'txt']
     title: Optional[str] = None
     description: Optional[str] = None
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
@@ -43,7 +55,6 @@ class ProductModel(BaseModel):
     quality_specs: Optional[QualitySpecModel] = None
     media: Optional[List[MediaModel]] = None
     delivery_location: Optional[str] = None  # e.g., "farm gate" or "nearest port"
-    # Additional fields
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = None
 
@@ -71,8 +82,6 @@ class BusinessDetailsModel(BaseModel):
 
 
 class ContactInfoModel(BaseModel):
-    email: Optional[str] = None
-    phone: Optional[str] = None
     website: Optional[HttpUrl] = None
     social_links: Optional[List[HttpUrl]] = None
 
@@ -123,8 +132,7 @@ class CommunicationModel(BaseModel):
     notification_prefs: NotificationPrefsModel = Field(default_factory=NotificationPrefsModel)
 
 
-class FarmerProfileModel(BaseModel):
-    user_id: str  # reference to user; could be UUID or database ID
+class DetailFarmerProfileModel(BaseModel):
     farm_name: str
     contact_person: str
     location: LocationModel = Field(default_factory=LocationModel)
@@ -142,47 +150,17 @@ class FarmerProfileModel(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = None
 
+class ProfileResponse(BaseModel):
+    id: str = Field(..., alias="_id")
+    basic_info: BasicProfileBase
+    active_profile: Optional[DetailFarmerProfileModel] = {}
+    draft_profile: Optional[DetailFarmerProfileModel] = {}
+
     def to_dict(self) -> dict:
         """
         Serialize the Pydantic model to a Python dict.
         """
         # Use Pydantic's dict() for conversion
         return self.dict()
-    status: Literal['pending', 'approved', 'rejected'] = 'pending'
 
 
-# Example instantiation
-example_profile = FarmerProfileModel(
-    user_id="user123",
-    farm_name="Prairie Grain Co.",
-    contact_person="John Doe",
-    description="Family-owned grain farm specializing in organic wheat and barley.",
-    contact=ContactInfoModel(
-        email="john@example.com",
-        phone="+1-123-456-7890",
-        website="https://prairiegrain.example.com"
-    ),
-    farm_details=FarmDetailsModel(
-        acreage=500.0,
-        practices=["organic", "no-till"],
-        planting_start=date(2025, 4, 1),
-        harvest_end=date(2025, 9, 30),
-    ),
-    products=[
-        ProductModel(
-            name="Spring Wheat",
-            category="wheat",
-            variety="Variety X",
-            quantity_available=1000.0,
-            unit="tonnes",
-            price_min=200.0,
-            price_max=220.0,
-            price_currency="CAD",
-            harvest_date=date(2025, 9, 15),
-            incoterms=["FOB"],
-            packaging_options=["bulk"],
-            min_order_quantity=50.0
-        )
-    ],
-    status =  'pending'
-)

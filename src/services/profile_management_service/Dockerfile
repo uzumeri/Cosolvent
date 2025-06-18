@@ -6,9 +6,13 @@ COPY src/shared /opt/shared
 WORKDIR /opt/shared
 RUN pip install --no-cache-dir -e .
 
-# 2. Copy & install the service
-COPY src/services/user_management_service /opt/service
+ # 2. Copy only requirements and install (cache pip layers unless requirements change)
+COPY src/services/profile_management_service/requirements.txt /opt/service/requirements.txt
 WORKDIR /opt/service
 RUN pip install --no-cache-dir -r requirements.txt
+ # Copy service code
+COPY src/services/profile_management_service /opt/service
 
-CMD ["python", "src/main.py"]
+RUN chmod +x /opt/service/entrypoint.sh
+# Use bash to execute entrypoint to avoid exec format issues
+ENTRYPOINT ["bash", "/opt/service/entrypoint.sh"]

@@ -8,7 +8,7 @@ class Database:
         self.db = self.client[Settings.Config.DB_NAME]
         # Profiles collection
         self.profiles = self.db['profiles']
-        self.assets = self.db["assets"]
+        self.assets = self.db['assets']
 
 
 db = Database()

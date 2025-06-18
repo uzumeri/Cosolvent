@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 from src.utils.publisher import publish_asset
 from src.schemas.asset_service_schema import AssetCreate, AssetResponse
 from src.database.crud.asset_service_crud import AssetCRUD
+from src.database.crud.profile_generation_crud import PROFILECRUD
 from src.core.config import Config
 from fastapi import Query
 from bson import ObjectId
@@ -47,6 +48,9 @@ async def upload_asset(
     user_id: str = Form(...),
 ):
     # Validate MIME
+    user = await PROFILECRUD.get_profile_by_user_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User does not registered")
     if file.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.content_type}")
 

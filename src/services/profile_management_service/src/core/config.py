@@ -12,7 +12,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://mongodb:27017")
-        DB_NAME: str = os.getenv("DB_NAME", "profile_db")
+        DB_NAME: str = os.getenv("DB_NAME", "COSOLVENT_DB")
         RABBITMQ_URL: str = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
         S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "http://s3-server:9000")
         S3_BUCKET: str = os.getenv("ASSETS_BUCKET", os.getenv("S3_BUCKET", "assets"))
