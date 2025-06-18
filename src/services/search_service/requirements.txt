@@ -1,6 +1,11 @@
 fastapi
 uvicorn[standard]
 aio-pika
-pydantic
+pydantic<2.0.0
 pytest
 pytest-asyncio
+openai[datalib]<1.0.0
+pinecone
+cachetools
+httpx
+python-dotenv
