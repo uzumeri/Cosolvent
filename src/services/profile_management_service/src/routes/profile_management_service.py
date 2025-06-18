@@ -35,7 +35,7 @@ async def get_profile_by_user_id(response: Response,user_id: str):
         if not profile:
             response.status_code = status.HTTP_404_NOT_FOUND
             return {
-                "sucess": False,
+                "success": False,
                 "detail": f"Profile with user_id {user_id} not found"
             }
         
