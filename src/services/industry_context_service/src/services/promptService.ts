@@ -8,7 +8,7 @@ const SYSTEM_PROMPT_KEY = "system_prompt";
 export class PromptService {
 	constructor(
 		private db: Db,
-		private redis?: Redis,
+		private redis: Redis,
 	) {}
 
 	async getPrompt(): Promise<string> {
