@@ -14,7 +14,7 @@ class PROFILECRUD:
                 profiles.append(profile)
             return profiles
         except Exception as e:
-            return f"error occured while getting all profiles....({e})"
+            return f"error occurred while getting all profiles....({e})"
     @staticmethod
     async def create_profile(profile_data: dict) -> Optional[dict]:
         """
