@@ -28,7 +28,7 @@ async def get_profile(profile_id: str,response: Response):
         return ProfileResponse(**profile)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving profile with profile id {profile_id}: {e}")
-@router.get("profile_with_user_id/{user_id}", status_code=status.HTTP_200_OK, response_model=dict)
+@router.get("/profile_with_user_id/{user_id}", status_code=status.HTTP_200_OK, response_model=dict)
 async def get_profile_by_user_id(response: Response,user_id: str):
     try:
         profile = await PROFILECRUD.get_profile_by_user_id(user_id)

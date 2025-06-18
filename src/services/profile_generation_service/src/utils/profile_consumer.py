@@ -6,13 +6,14 @@ import logging
 from concurrent.futures import ThreadPoolExecutor  # retained if needed
 import aio_pika
 from src.core.config import Settings
-from src.database.crud.profile_generation_service_crud import PROFILECRUD
+from src.database.crud.profile_generation_crud import PROFILECRUD
+from src.database.crud.asset_crud import AssetCRUD
 from shared.events import QueueEventNames
 from src.utils.mock_profile_generation_llm import LLMPROFILEGENERATION
 from src.utils.publisher import publish_profile_generated_event
 import sys
 from datetime import date, datetime
-
+from fastapi import HTTPException
 # Configure logging
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
@@ -30,12 +31,17 @@ async def process_metadata(message: aio_pika.IncomingMessage):
             # Extract job details and resume_path
             asset_id = data.get("asset_id")
             
+
             user_id = data.get("user_id")
             # Fetch existing metadata and profile
-            metadata = await PROFILECRUD.get_metadata_by_asset_id(asset_id)
-            cur_profile = await PROFILECRUD.get_by_id(asset_id)
+            metadata = await AssetCRUD.get_by_id(asset_id)
+            cur_profile = await PROFILECRUD.get_profile_by_user_id(user_id)
+            if not cur_profile:
+                raise HTTPException(status_code=404, detail=f"Profile not found for user_id: {user_id}")
+
             # Generate new profile via mock LLM
-            llm = LLMPROFILEGENERATION(cur_profile, metadata, user_id)
+            draft_profile = cur_profile["draft_profile"] if cur_profile else None
+            llm = LLMPROFILEGENERATION(draft_profile, metadata, user_id)
             generated_profile = llm.generate_profile()
             
             # Serialize date objects to datetime for MongoDB compatibility
@@ -52,7 +58,7 @@ async def process_metadata(message: aio_pika.IncomingMessage):
 
             profile_data = generated_profile.dict() if hasattr(generated_profile, 'dict') else generated_profile
             profile_data = convert_dates(profile_data)
-            await PROFILECRUD.create(profile_data)
+            await PROFILECRUD.update_draft_profile(user_id, profile_data)
             print("heyyyy")
             await publish_profile_generated_event({
                 "user_id": user_id,

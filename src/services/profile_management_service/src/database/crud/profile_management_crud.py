@@ -70,8 +70,9 @@ class PROFILECRUD:
             
             draft_profile = profile["draft_profile"]
             await db.profiles.update_one({"_id": profile["_id"]}, {"$set": {"active_profile": draft_profile, "draft_profile": {}}})
+            profile = await db.profiles.find_one({"basic_info.user_id": user_id})
             profile["_id"] = str(profile["_id"])
-
+            
             return profile
         except Exception as e:
             return f"error occured while approving profile ...... ({e})" 
@@ -83,6 +84,7 @@ class PROFILECRUD:
             if not profile:
                 return None
             await db.profiles.update_one({"_id": profile["_id"]}, {"$set":{"draft_profile":{}}})
+            profile = await db.profiles.find_one({"basic_info.user_id": user_id})
             profile["_id"] = str(profile["_id"])
             return profile
         except Exception as e:

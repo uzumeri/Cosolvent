@@ -162,7 +162,6 @@ class ProfileResponse(BaseModel):
         """
         # Use Pydantic's dict() for conversion
         return self.dict()
-    status: Literal['pending', 'approved', 'rejected'] = 'pending'
 
 
 # Example instantiation

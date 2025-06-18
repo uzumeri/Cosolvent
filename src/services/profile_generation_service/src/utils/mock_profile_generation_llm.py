@@ -1,4 +1,4 @@
-from src.database.models.profile_generation_service import FarmerProfileModel, ContactInfoModel, FarmDetailsModel, ProductModel
+from src.database.models.profile_generation_service import DetailFarmerProfileModel, ContactInfoModel, FarmDetailsModel, ProductModel
 from datetime import date
 class LLMPROFILEGENERATION:
     """
@@ -12,14 +12,11 @@ class LLMPROFILEGENERATION:
 
     def generate_profile(self):
         print("Generating profile using mock LLM...")
-        return FarmerProfileModel(
-            user_id=self.user_id,
+        return DetailFarmerProfileModel(
             farm_name="Prairie Grain Co.",
             contact_person="John Doe",
             description="Family-owned grain farm specializing in organic wheat and barley.",
             contact=ContactInfoModel(
-                email="john@example.com",
-                phone="+1-123-456-7890",
                 website="https://prairiegrain.example.com"
             ),
             farm_details=FarmDetailsModel(
@@ -44,7 +41,6 @@ class LLMPROFILEGENERATION:
                     min_order_quantity=50.0
                 )
             ],
-            status='pending'
         )
     def farmer_model_to_dict(self):
         """
