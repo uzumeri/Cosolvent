@@ -5,8 +5,12 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
-export const scrollToBottom = (ref: React.RefObject<HTMLDivElement | null>) => {
+export const scrollToRef = (
+	ref: React.RefObject<HTMLDivElement | null>,
+	options?: ScrollIntoViewOptions,
+) => {
+	const option = options ?? { behavior: "smooth" };
 	if (ref) {
-		ref.current?.scrollIntoView({ behavior: "smooth" });
+		ref.current?.scrollIntoView(option);
 	}
 };
