@@ -6,5 +6,6 @@ setup(
     packages=find_packages(),
     install_requires=[
         "pydantic>=1.10,<2.0",
+        
     ],
 )
