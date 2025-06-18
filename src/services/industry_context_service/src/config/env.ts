@@ -17,6 +17,9 @@ const EnvSchema = z.object({
 		.enum(["development", "test", "production"])
 		.default("development"),
 	PORT: z.coerce.number().default(8004),
+	MONGODB_URI: z.string(),
+	MONGODB_NAME: z.string(),
+	REDIS_URL: z.string(),
 	OPENAI_API_KEY: z.string(),
 	PINECONE_API_KEY: z.string(),
 	PINECONE_INDEX_NAME: z.string(),

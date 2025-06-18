@@ -1,15 +1,20 @@
+import type Redis from "ioredis";
+import type { Db } from "mongodb";
 import { v4 as uuidv4 } from "uuid";
-import chatApp from "./chatAgent";
+import newChatAgent from "./chatAgent";
+import { PromptService } from "./promptService";
 
 type ChatService = {
 	threadId: string | null;
 	question: string;
 };
 
-const chatService = async ({ threadId, question }: ChatService) => {
-	if (!threadId) {
-		threadId = uuidv4();
-	}
+const chatService = async (
+	db: Db,
+	redis: Redis,
+	{ threadId, question }: ChatService,
+) => {
+	threadId = threadId ?? uuidv4();
 
 	const config = { configurable: { thread_id: threadId } };
 	const input = [
@@ -19,8 +24,14 @@ const chatService = async ({ threadId, question }: ChatService) => {
 		},
 	];
 
-	const output = await chatApp.invoke({ messages: input }, config);
+	const promptService = new PromptService(db, redis);
+	const systemPrompt = await promptService.getPrompt();
+
+	const chatAget = await newChatAgent({ systemPrompt });
+	const output = await chatAget.invoke({ messages: input }, config);
+
 	const aiResponse = output.messages[output.messages.length - 1].content;
+
 	const reponse = {
 		threadId,
 		question,
