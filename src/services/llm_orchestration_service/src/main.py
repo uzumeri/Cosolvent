@@ -6,6 +6,7 @@ from .config.models import AppConfig # Use . for config
 from .core.logging import get_logger
 from pathlib import Path
 import uvicorn
+from .config.mongo_store import seed_config_if_empty
 
 logger = get_logger(__name__)
 
@@ -18,6 +19,7 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup_event():
     logger.info("Starting LLM Orchestration Service...")
+    await seed_config_if_empty()
     # Define the path to the configuration file relative to this main.py file
     # Assuming main.py is in src/ and config.json is at the root of llm-orchestration-service/
     config_file = Path(__file__).parent.parent / "config.json"

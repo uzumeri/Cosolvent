@@ -1,7 +1,7 @@
 # routes/config.py
 from fastapi import APIRouter, HTTPException, Path, Body
 from ..config.models import AppConfig, ClientConfig, ProviderConfig, ClientName, ServiceConfig # Use .. to go up one level to src, then to config
-from ..config import store as config_store # Use .. to go up one level to src, then to config
+from ..config import mongo_store as config_store # Use .. to go up one level to src, then to config
 from ..core.logging import get_logger
 from fastapi.responses import JSONResponse
 from ..utils.service_utils import mask_sensitive_fields
