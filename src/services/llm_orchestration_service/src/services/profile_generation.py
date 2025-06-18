@@ -2,14 +2,14 @@
 import json
 from ..config.store import get_config
 from ..providers import get_client as get_llm_provider_client
-from ..config.models import AppConfig, ServiceConfig, ProviderConfig
+from ..config.models import AppConfig, ServiceConfig, ProviderConfig, ExporterProfileSchema, ImporterProfileSchema, ProfileType
 from ..core.logging import get_logger
 from typing import List, Dict, Any
 
 logger = get_logger(__name__)
 
-async def generate_structured_profile(texts: List[str], service_name: str = "profile_generation") -> Dict[str, Any]:
-    logger.info(f"Profile generation service called with {len(texts)} text inputs for service '{service_name}'.")
+async def generate_structured_profile(texts: List[str], service_name: str = "profile_generation", profile_type: str = "exporter") -> Dict[str, Any]:
+    logger.info(f"Profile generation service called with {len(texts)} text inputs for service '{service_name}' and profile_type '{profile_type}'.")
     app_config: AppConfig = await get_config()
 
     if service_name not in app_config.services:
@@ -17,13 +17,8 @@ async def generate_structured_profile(texts: List[str], service_name: str = "pro
         raise ValueError(f"Service '{service_name}' is not configured.")
 
     service_cfg: ServiceConfig = app_config.services[service_name]
-
-    if not service_cfg.profile_schema:
-        logger.error(f"Profile schema not defined for service '{service_name}' in the configuration.")
-        raise ValueError(f"Profile schema is not defined for service '{service_name}'.")
-
-    provider_cfg: ProviderConfig = app_config.providers[service_cfg.provider]
-    client = await get_llm_provider_client(service_cfg.provider, provider_cfg)
+    provider_cfg: ProviderConfig = app_config.clients[service_cfg.client].providers[service_cfg.provider]
+    client = await get_llm_provider_client(service_cfg.client, provider_cfg)
 
     # Prepare options
     opts = service_cfg.options or {}
@@ -35,9 +30,15 @@ async def generate_structured_profile(texts: List[str], service_name: str = "pro
         logger.warning(f"Combined text length ({len(combined_text)}) exceeds limit ({max_len}). Truncating.")
         combined_text = combined_text[:max_len]
 
-    # Convert the profile schema to a string representation for the prompt
-    # This tells the LLM what structure to follow.
-    schema_description = json.dumps(service_cfg.profile_schema, indent=2)
+    # Select schema based on profile_type
+    if profile_type == ProfileType.EXPORTER:
+        schema_model = ExporterProfileSchema
+    elif profile_type == ProfileType.IMPORTER:
+        schema_model = ImporterProfileSchema
+    else:
+        logger.error(f"Invalid profile_type: {profile_type}")
+        return {"error": "Invalid profile_type", "details": profile_type}
+    schema_description = json.dumps(schema_model.schema(), indent=2)
 
     # Build prompt using configured template or default
     prompt_tpl = opts.get("prompt_template")
@@ -64,8 +65,6 @@ async def generate_structured_profile(texts: List[str], service_name: str = "pro
     logger.info(f"Raw LLM output for profile generation: {raw_llm_output[:100]}...")
 
     try:
-        # Attempt to parse the LLM output as JSON
-        # Basic cleaning: LLMs sometimes wrap JSON in backticks or add explanations.
         cleaned_output = raw_llm_output.strip()
         if cleaned_output.startswith("```json"):
             cleaned_output = cleaned_output[7:]
@@ -73,36 +72,14 @@ async def generate_structured_profile(texts: List[str], service_name: str = "pro
             cleaned_output = cleaned_output[3:]
         if cleaned_output.endswith("```"):
             cleaned_output = cleaned_output[:-3]
-        
         profile_json = json.loads(cleaned_output.strip())
-        # Optionally validate against schema
-        if opts.get("validate_schema_output"):
-            try:
-                import jsonschema
-                jsonschema.validate(profile_json, service_cfg.profile_schema)
-                logger.info("Profile JSON validated against schema successfully.")
-            except ImportError:
-                logger.warning("jsonschema not installed; skipping schema validation.")
-            except Exception as ve:
-                logger.error(f"Profile JSON validation failed: {ve}")
-                return {"error": "Profile JSON validation failed.", "details": str(ve), "raw_output": raw_llm_output}
-        logger.info("Profile generation successful and parsed to JSON.")
-        return profile_json
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse LLM output as JSON for profile generation: {e}")
-        logger.error(f"LLM Raw Output that caused error: {raw_llm_output}")
-        # Fallback or error handling: return the raw string or a custom error structure
-        # Depending on strictness, you might raise an exception or return a dict indicating failure.
-        # For now, returning a dict with error and raw output.
-        return {
-            "error": "Failed to parse LLM output as JSON.",
-            "details": str(e),
-            "raw_output": raw_llm_output
-        }
+        profile_obj = schema_model.parse_obj(profile_json)
+        logger.info("Profile generation successful and parsed to schema model.")
+        return profile_obj.dict()
     except Exception as e:
-        logger.error(f"An unexpected error occurred during profile generation post-processing: {e}")
+        logger.error(f"Failed to parse or validate LLM output as profile schema: {e}")
         return {
-            "error": "An unexpected error occurred during post-processing.",
+            "error": "Failed to parse or validate LLM output as profile schema.",
             "details": str(e),
             "raw_output": raw_llm_output
         }

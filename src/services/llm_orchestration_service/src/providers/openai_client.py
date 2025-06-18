@@ -20,7 +20,8 @@ MessageContentPart = Union[
 class OpenAIClient(LLMClient):
     def __init__(self, config: ProviderConfig):
         super().__init__(config)
-        self.client = openai.AsyncOpenAI(api_key=self.config.api_key, base_url=self.config.endpoint if self.config.endpoint else None)
+        # Remove reference to self.config.endpoint, always use default endpoint
+        self.client = openai.AsyncOpenAI(api_key=self.config.api_key)
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def call_model(self, prompt: str, **kwargs) -> str:
