@@ -22,7 +22,7 @@ async def get_profile(profile_id: str,response: Response):
         if not profile:
             response.status_code = status.HTTP_404_NOT_FOUND
             return {
-                "sucess": False,
+                "success": False,
                 "detail": f"Profile with id {profile_id} not found"
             }
         return ProfileResponse(**profile)
