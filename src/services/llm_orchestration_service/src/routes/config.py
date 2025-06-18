@@ -1,6 +1,6 @@
 # routes/config.py
 from fastapi import APIRouter, HTTPException
-from ..config.models import AppConfig # Use .. to go up one level to src, then to config
+from ..config.models import AppConfig, ClientConfig # Use .. to go up one level to src, then to config
 from ..config import store as config_store # Use .. to go up one level to src, then to config
 from ..core.logging import get_logger
 
@@ -21,10 +21,14 @@ def _mask_providers_api_keys(cfg: AppConfig) -> AppConfig:
         # show first 4 and last 4, mask middle
         return key[:4] + '*' * (n - 8) + key[-4:]
 
-    masked = {}
-    for name, pc in cfg.providers.items():
-        masked[name] = pc.copy(update={"api_key": _mask_key(pc.api_key)})
-    return cfg.copy(update={"providers": masked})
+    masked_clients = {}
+    for client_name, client_config in cfg.clients.items():
+        masked_providers = {}
+        for name, pc in client_config.providers.items():
+            masked_providers[name] = pc.copy(update={"api_key": _mask_key(pc.api_key)})
+        masked_clients[client_name] = ClientConfig(providers=masked_providers)
+
+    return cfg.copy(update={"clients": masked_clients})
 
 @router.get("", response_model=AppConfig)
 async def read_config_endpoint(): # Renamed to avoid conflict with imported `config` module

@@ -1,5 +1,9 @@
 from pydantic import BaseModel, Field
 from typing import Dict, Optional, Any
+from enum import Enum
+
+class ClientName(str, Enum):
+    OPENAI = "openai"
 
 class ProviderConfig(BaseModel):
     name: str
@@ -8,7 +12,11 @@ class ProviderConfig(BaseModel):
     model: str
     options: Optional[Dict[str, Any]] = None # Added for provider-specific options
 
+class ClientConfig(BaseModel):
+    providers: Dict[str, ProviderConfig]
+
 class ServiceConfig(BaseModel):
+    client: ClientName
     provider: str                       # key into providers dict
     prompt_template_version: str
     cache_enabled: bool = False
@@ -16,5 +24,5 @@ class ServiceConfig(BaseModel):
     options: Optional[Dict[str, Any]] = None # Already existed, good
 
 class AppConfig(BaseModel):
-    providers: Dict[str, ProviderConfig]
+    clients: Dict[ClientName, ClientConfig]
     services: Dict[str, ServiceConfig]  # e.g. 'translate', 'search', etc.

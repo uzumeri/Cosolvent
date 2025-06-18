@@ -1,22 +1,27 @@
 {
-  "providers": {
-    "openai_gpt4o_vision": {
-      "name": "openai_gpt4o_vision",
-      "api_key": "YOUR_OPENAI_API_KEY_HERE",
-      "endpoint": "https://api.openai.com/v1",
-      "model": "gpt-4o",
-      "options": {}
-    },
-    "openai_whisper_1": {
-      "name": "openai_whisper_1",
-      "api_key": "YOUR_OPENAI_API_KEY_HERE",
-      "endpoint": "https://api.openai.com/v1",
-      "model": "whisper-1",
-      "options": {}
+  "clients": {
+    "openai": {
+      "providers": {
+        "openai_gpt4o_vision": {
+          "name": "openai_gpt4o_vision",
+          "api_key": "OPENAI_API_KEY_PLACEHOLDER",
+          "endpoint": "https://api.openai.com/v1",
+          "model": "gpt-4o",
+          "options": {}
+        },
+        "openai_whisper_1": {
+          "name": "openai_whisper_1",
+          "api_key": "OPENAI_API_KEY_PLACEHOLDER",
+          "endpoint": "https://api.openai.com/v1",
+          "model": "whisper-1",
+          "options": {}
+        }
+      }
     }
   },
   "services": {
     "direct_call": {
+      "client": "openai",
       "provider": "openai_gpt4o_vision",
       "prompt_template_version": "v1",
       "cache_enabled": false,
@@ -29,6 +34,7 @@
       }
     },
     "translate": {
+      "client": "openai",
       "provider": "openai_gpt4o_vision",
       "prompt_template_version": "v1",
       "cache_enabled": false,
@@ -46,6 +52,7 @@
       }
     },
     "metadata_extraction": {
+      "client": "openai",
       "provider": "openai_gpt4o_vision", 
       "prompt_template_version": "v1",
       "cache_enabled": false,
@@ -103,6 +110,7 @@
       }
     },
     "profile_generation": {
+      "client": "openai",
       "provider": "openai_gpt4o_vision",
       "prompt_template_version": "v1",
       "cache_enabled": false,

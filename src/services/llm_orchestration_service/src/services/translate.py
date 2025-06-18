@@ -32,13 +32,18 @@ async def translate(text: str, target_language: str, service_name: str = "transl
     
     service_cfg: ServiceConfig = app_config.services[service_name]
 
-    if service_cfg.provider not in app_config.providers:
+    if service_cfg.client not in app_config.clients:
+        logger.error(f"Client configuration for '{service_cfg.client}' not found.")
+        raise ValueError(f"Client '{service_cfg.client}' is not configured.")
+
+    client_cfg = app_config.clients[service_cfg.client]
+
+    if service_cfg.provider not in client_cfg.providers:
         logger.error(f"Provider configuration for '{service_cfg.provider}' not found for service '{service_name}'.")
         raise ValueError(f"Provider '{service_cfg.provider}' is not configured.")
 
-    provider_cfg: ProviderConfig = app_config.providers[service_cfg.provider]
-    
-    client = await get_llm_provider_client(service_cfg.provider, provider_cfg)
+    provider_cfg: ProviderConfig = client_cfg.providers[service_cfg.provider]
+    client = await get_llm_provider_client(service_cfg.client, provider_cfg)
 
     # Build prompt using configured templates or fallback
     opts = service_cfg.options or {}

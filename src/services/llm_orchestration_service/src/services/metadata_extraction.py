@@ -55,14 +55,15 @@ async def extract_textual_metadata_from_file(file: UploadFile, service_name: str
         mime_type, _ = mimetypes.guess_type(file.filename)
 
     proc_cfg = {}
+    client_cfg = app_config.clients[service_cfg.client]
     if mime_type:
         if mime_type.startswith("image/"):
             logger.info(f"Processing image file: {file.filename}")
             proc_cfg = opts.get("image_processing", {})
             vlm_provider = proc_cfg.get("vlm_provider")
-            if vlm_provider and vlm_provider in app_config.providers:
-                vlm_provider_cfg = app_config.providers[vlm_provider]
-                vlm_client = await get_llm_provider_client(vlm_provider, vlm_provider_cfg)
+            if vlm_provider and vlm_provider in client_cfg.providers:
+                vlm_provider_cfg = client_cfg.providers[vlm_provider]
+                vlm_client = await get_llm_provider_client(service_cfg.client, vlm_provider_cfg)
                 vlm_template = proc_cfg.get("vlm_prompt_template", "")
                 vlm_params = proc_cfg.get("vlm_params", {})
                 vlm_prompt = vlm_template.format(file_name=file.filename)
@@ -77,11 +78,11 @@ async def extract_textual_metadata_from_file(file: UploadFile, service_name: str
     logger.info("Extracted text content, now calling LLM for metadata extraction.")
 
     metadata_llm_provider_name = proc_cfg.get("metadata_llm_provider") or service_cfg.provider
-    metadata_llm_provider_cfg = app_config.providers.get(metadata_llm_provider_name)
+    metadata_llm_provider_cfg = client_cfg.providers.get(metadata_llm_provider_name)
     if not metadata_llm_provider_cfg:
         raise ValueError(f"Provider '{metadata_llm_provider_name}' for metadata extraction is not configured.")
 
-    metadata_llm_client = await get_llm_provider_client(metadata_llm_provider_name, metadata_llm_provider_cfg)
+    metadata_llm_client = await get_llm_provider_client(service_cfg.client, metadata_llm_provider_cfg)
     metadata_llm_template = proc_cfg.get("metadata_llm_prompt_template", "{text}")
     final_prompt = metadata_llm_template.format(vlm_output=text_content_for_llm, file_name=file.filename)
     metadata_llm_params = proc_cfg.get("metadata_llm_params", {})

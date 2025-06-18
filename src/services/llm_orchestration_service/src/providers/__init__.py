@@ -2,45 +2,41 @@
 from typing import Dict, Type
 from .base import LLMClient
 from .openai_client import OpenAIClient
-from ..config.models import ProviderConfig
+from ..config.models import ProviderConfig, ClientName
 from ..core.exceptions import ProviderNotFoundException
 
 # Registry of available provider clients
-_provider_clients: Dict[str, Type[LLMClient]] = {
-    "openai": OpenAIClient,
+_provider_clients: Dict[ClientName, Type[LLMClient]] = {
+    ClientName.OPENAI: OpenAIClient,
 }
 
 # Cache for instantiated clients to reuse them
 _client_instances: Dict[str, LLMClient] = {}
 
-async def get_client(provider_name: str, config: ProviderConfig) -> LLMClient:
+async def get_client(client_name: ClientName, config: ProviderConfig) -> LLMClient:
     """
     Factory function to get an initialized LLM client instance.
     Caches instances to avoid re-initializing on every call.
     """
-    # This logic handles variations like 'openai_gpt4' by mapping to 'openai'
-    if "openai" in provider_name.lower():
-        normalized_provider_name = "openai"
-    else:
-        normalized_provider_name = provider_name.lower()
+    instance_key = f"{client_name.value}_{config.name}"
 
-
-    if normalized_provider_name in _client_instances:
+    if instance_key in _client_instances:
         # TODO: Add logic to check if config has changed and re-initialize if necessary
-        return _client_instances[normalized_provider_name]
+        return _client_instances[instance_key]
 
-    if normalized_provider_name not in _provider_clients:
-        raise ProviderNotFoundException(provider_name)
+    if client_name not in _provider_clients:
+        raise ProviderNotFoundException(client_name.value)
 
-    client_class = _provider_clients[normalized_provider_name]
+    client_class = _provider_clients[client_name]
     # Pass the specific provider_config to the client constructor
     instance = client_class(config=config)
-    _client_instances[normalized_provider_name] = instance
+    _client_instances[instance_key] = instance
     return instance
 
 def register_provider(name: str, client_class: Type[LLMClient]):
     """Allows dynamic registration of new providers."""
-    _provider_clients[name.lower()] = client_class
+    # This function might need adjustment if used with the new Enum-based client names
+    pass
 
 # Example of how services might get a client:
 # from ..config.store import get_config
