@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { connectToDB } from "./lib/db";
 import connectToRedis from "./lib/redis";
 import indexRoutes from "./routes";
+import adminRoutes from "./routes/admin";
 import queryRoutes from "./routes/query";
 
 const main = async () => {
@@ -10,6 +11,7 @@ const main = async () => {
 	const redis = await connectToRedis();
 
 	app.route("/", indexRoutes);
+	app.route("/admin", adminRoutes(db, redis));
 	app.route("/query", queryRoutes);
 
 	return app;
