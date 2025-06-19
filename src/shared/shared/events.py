@@ -160,8 +160,8 @@ class DetailFarmerProfileModel(BaseModel):
 class ProfileResponse(BaseModel):
     id: str = Field(..., alias="_id")
     basic_info: BasicProfileBase
-    active_profile: Optional[DetailFarmerProfileModel] = {}
-    draft_profile: Optional[DetailFarmerProfileModel] = {}
+    active_profile: Optional[DetailFarmerProfileModel] = None
+    draft_profile: Optional[DetailFarmerProfileModel] = None
 
     def to_dict(self) -> dict:
         """
