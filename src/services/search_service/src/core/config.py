@@ -1,7 +1,12 @@
-from pydantic import BaseSettings
+from pydantic import BaseSettings, Field
 
 class Settings(BaseSettings):
-    rabbitmq_url: str
+    RABBITMQ_URL: str = Field(..., env="RABBITMQ_URL")
+    PINECONE_API_KEY: str = Field(..., env="PINECONE_API_KEY")
+    # URL for your Pinecone index host, e.g. "name-xxxx.svc.us-east1-aws.pinecone.io"
+    PINECONE_INDEX_HOST: str = Field(..., env="PINECONE_INDEX_HOST")
+    OPENAI_API_KEY: str = Field(..., env="OPENAI_API_KEY")
+    CACHE_TTL: int = Field(300, env="CACHE_TTL")
 
     class Config:
         env_file = ".env"
