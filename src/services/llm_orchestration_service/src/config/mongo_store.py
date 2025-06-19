@@ -3,7 +3,6 @@ from ..core.settings import get_settings
 from .models import AppConfig
 from typing import Any
 import json
-from .mongo_store import collection, CONFIG_DOC_ID
 from pathlib import Path
 
 settings = get_settings()

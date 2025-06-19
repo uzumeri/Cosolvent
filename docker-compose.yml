@@ -121,6 +121,12 @@ services:
       context: ./src/services/llm_orchestration_service
     ports:
       - "8005:8000"
+    environment:
+      - mongodb_uri=mongodb://mongodb:27017
+      - mongodb_db=administration
+      - mongodb_collection=config
+    depends_on:
+      - mongodb
     networks:
       - app_network
 
