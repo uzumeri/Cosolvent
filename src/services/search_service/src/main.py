@@ -4,7 +4,9 @@ import aio_pika
 from fastapi import FastAPI
 
 from core.config import settings
-from core.rabbitmq import connect, consume_asset_ready, connection
+from core.rabbitmq import connect, consume_asset_ready
+import core.rabbitmq as _rmq
+from core.pinecone import init_pinecone
 from routes.search_service import router as search_router
 
 # Configure logging
@@ -28,6 +30,10 @@ async def health():
 async def startup_event():
     logger.info("Connecting to RabbitMQ...")
     await connect()
+    # Initialize Pinecone client and index
+    logger.info("Initializing Pinecone...")
+    init_pinecone()
+    logger.info("Pinecone initialized")
     logger.info("Starting AssetReadyForIndexing consumer...")
     await consume_asset_ready()
 
@@ -35,7 +41,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("Closing RabbitMQ connection...")
-    await connection.close()
+    await _rmq.connection.close()
 
 # Include search router under /api/search
 app.include_router(search_router, prefix="/api/search")
