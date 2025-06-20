@@ -3,6 +3,33 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  /*
+  ==========================================
+  "Golden Harvest" Theme
+  ==========================================
+  */
+  --font-sans: "Inter", sans-serif;
+  /* We're adding a serif font for headings */
+  --font-serif: "Lora", serif; 
+
+  /* A warm, off-white background instead of dark mode */
+  --color-background: #FDFCF8;
+  /* A dark, earthy brown for text for a softer, premium feel */
+  --color-foreground: #332d24;
+  
+  --color-card: #FFFFFF;
+  --color-card-foreground: var(--color-foreground);
+  --color-card-border: theme(colors.stone.200);
+  
+  /* A vibrant, confident gold for primary actions */
+  --color-primary: #f59e0b; /* Amber 500 */
+  --color-primary-foreground: #FFFFFF;
+  --color-primary-hover: #fbbf24; /* Amber 400 */
+
+  --radius: 0.5rem; /* A slightly sharper radius for a cleaner look */
+}
+
 @theme inline {
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
@@ -116,7 +143,45 @@
 	* {
 		@apply border-border outline-ring/50;
 	}
-	body {
-		@apply bg-background text-foreground;
+
+	:root {
+		font-family: var(--font-sans);
+		color-scheme: light;
 	}
+
+
+	body {
+		background-color: var(--color-background);
+		color: var(--color-foreground);
+		overflow-x: hidden;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-serif);
+  }
+}
+
+ /*
+  ==========================================
+  CUSTOM ANIMATIONS
+  ==========================================
+  */
+  @keyframes aurora {
+    from {
+      background-position: 50% 50%, 50% 50%;
+    }
+    to {
+      background-position: 350% 50%, 350% 50%;
+    }
+  }
+
+  /*
+==========================================
+CUSTOM UTILITY CLASSES
+==========================================
+*/
+@layer utilities {
+  .animation-aurora {
+    animation: aurora 60s linear infinite;
+  }
 }
