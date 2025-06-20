@@ -12,6 +12,11 @@ class LLMClient(ABC):
         """Makes a call to the LLM and returns the response as a string."""
         ...
 
+    @abstractmethod
+    async def call_vision_model(self, prompt: str, image_bytes: bytes, **kwargs: Any) -> str:
+        """Makes a call to the LLM with vision capabilities and returns the response as a string."""
+        ...
+
     # Add an optional call_stt_model to the base class
     # Implementations can override this if they support STT
     async def call_stt_model(self, audio_bytes: bytes, filename: str, **kwargs: Any) -> str:
