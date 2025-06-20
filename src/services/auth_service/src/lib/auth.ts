@@ -2,7 +2,7 @@ import env from "@/config/env";
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { connectToDB } from "./db";
-import { openAPI } from "better-auth/plugins";
+import { admin, openAPI } from "better-auth/plugins";
 
 const db = await connectToDB();
 
@@ -12,5 +12,5 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true,
 	},
-	plugins: [openAPI()],
+	plugins: [openAPI(),admin()],
 });
