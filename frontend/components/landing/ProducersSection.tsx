@@ -7,9 +7,9 @@ import { BadgeCheck, MapPin } from 'lucide-react';
 import Image from 'next/image';
 
 const producers = [
-  { name: 'Clearwater Organics', location: 'Saskatchewan', image: '/images/producer-1.jpg', certs: ['Pro-Cert Organic', 'Non-GMO Project'] },
-  { name: 'Durum King Farms', location: 'Alberta', image: '/images/producer-2.jpg', certs: ['CSGA Certified Seed', 'HACCP Certified'] },
-  { name: 'Prairie Pulses Inc.', location: 'Manitoba', image: '/images/producer-3.jpg', certs: ['GlobalG.A.P.', 'ISO 22000'] },
+  { name: 'Clearwater Organics', location: 'Saskatchewan', image: '/images/Clearwater_Organics.png', certs: ['Pro-Cert Organic', 'Non-GMO Project'] },
+  { name: 'Durum King Farms', location: 'Alberta', image: '/images/Durum_King_Farms.png', certs: ['CSGA Certified Seed', 'HACCP Certified'] },
+  { name: 'Prairie Pulses Inc.', location: 'Manitoba', image: '/images/Prairie Pulses Inc.png', certs: ['GlobalG.A.P.', 'ISO 22000'] },
 ];
 
 const containerVariants = {
