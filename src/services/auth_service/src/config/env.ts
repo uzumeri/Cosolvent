@@ -17,7 +17,9 @@ const EnvSchema = z.object({
 		.enum(["development", "test", "production"])
 		.default("development"),
 	PORT: z.coerce.number().default(8020),
+	BASE_URL: z.string(),
 	MONGODB_URI: z.string(),
+	BETTER_AUTH_SECRET: z.string(),
 });
 
 // Validate env vars
