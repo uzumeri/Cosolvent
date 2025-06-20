@@ -1,27 +1,45 @@
+# ---- Base stage with PNPM and Corepack ----
+FROM node:20-slim AS base
+
+# Set environment variables for pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+WORKDIR /app
+
+# ---- Dependencies stage (only prod deps) ----
+FROM base AS prod-deps
+
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml* ./
+
+# Use Docker cache for node_modules
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+	pnpm install --prod --frozen-lockfile
+
 # ---- Build stage ----
-FROM node:20-alpine AS builder
+FROM base AS build
 
+COPY . .
+
+# Use Docker cache for dependencies
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+	pnpm install --frozen-lockfile
+
+RUN pnpm run build
+
+# ---- Final production image ----
+FROM node:20-slim AS final
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 WORKDIR /app
 
-# Copy only the necessary files
-COPY pnpm-lock.yaml package.json tsconfig.json tsup.config.ts ./
-COPY pnpm-workspace.yaml ./
-COPY src ./src
+# Install pnpm only
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Install deps and build
-RUN npm install -g pnpm \
-  && pnpm install --frozen-lockfile \
-  && pnpm run build
-
-# ---- Production stage ----
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Copy only the output and runtime files
-COPY --from=builder /app/dist ./dist
+# Copy built app and only required files
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
 COPY package.json pnpm-lock.yaml ./
 
-RUN npm install -g pnpm && pnpm install --prod
-
-CMD ["node", "dist/server.js"]
+CMD ["pnpm", "start"]
