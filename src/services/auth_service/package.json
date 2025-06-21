@@ -4,10 +4,11 @@
 	"scripts": {
 		"dev": "tsx watch src/server.ts",
 		"build": "tsup",
-		"start": "node dist/server.js",
+		"start": "node dist/src/server.js",
 		"format": "biome format . --write",
 		"lint": "biome check .",
-		"lint:fix": "biome check . --write"
+		"lint:fix": "biome check . --write",
+		"seed:admin": "node dist/scripts/seedAdmin.js"
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.14.4",

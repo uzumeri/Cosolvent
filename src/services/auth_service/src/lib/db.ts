@@ -9,7 +9,7 @@ export const connectToDB = async (): Promise<Db> => {
 	const client = new MongoClient(env.MONGODB_URI);
 	await client.connect();
 
-	dbInstance = client.db(env.MONGODB_NAME);
+	dbInstance = client.db();
 
 	return dbInstance;
 };
