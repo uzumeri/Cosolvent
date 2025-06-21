@@ -55,7 +55,7 @@ async def search_profiles(req: SearchRequest):
         if filter_dict:
             query_kwargs["filter"] = filter_dict
         result = index.query(**query_kwargs)
-        print(result)
+        logger.info(result)
     except Exception as e:
         logger.error(f"Pinecone query failed: {e}")
         raise HTTPException(status_code=500, detail="Search query failed")

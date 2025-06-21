@@ -14,7 +14,7 @@ class PROFILECRUD:
             profile['_id'] = str(profile['_id'])
             return profile
         except Exception as e:
-            return f"can not find profile by the user id of {user_id} .... ({e})"
+            raise e
 
 
     
