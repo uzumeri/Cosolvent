@@ -40,9 +40,11 @@ async def search_profiles(req: SearchRequest):
     filter_dict = {}
     if req.country:
         filter_dict["country"] = {"$eq": req.country}
-    if req.categories:
+    # Apply categories filter only for non-empty category strings
+    valid_categories = [c for c in (req.categories or []) if c and c.strip()]
+    if valid_categories:
         # Use $in to match any of the requested categories
-        filter_dict["categories"] = {"$in": req.categories}
+        filter_dict["categories"] = {"$in": valid_categories}
 
     try:
         query_kwargs = {
