@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Response, UploadFile,File,
 
 from src.schemas.profile_management_service_schema import BasicProfileBase, ProfileResponse, BasicProfileResponse
 from src.database.crud.profile_management_crud import PROFILECRUD
+from src.utils.publisher import publish_profile_generation_completed
 
 router = APIRouter()
 
@@ -69,6 +70,9 @@ async def approve_profile(user_id: str):
         profile = await PROFILECRUD.approve_profile(user_id)
         if profile is None:
             raise HTTPException(status_code=404, detail=f"Profile not found for user {user_id}")
+        await publish_profile_generation_completed({
+            "user_id": user_id,
+        })
         return ProfileResponse(**profile)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error approving profile for user {user_id}: {e}")

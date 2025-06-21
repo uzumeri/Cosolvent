@@ -14,7 +14,6 @@ class BasicProfileBase(BaseModel):
     last_name: str
     birth_date: datetime
     phone_number: str
-    country:str
 
 class CoordinateModel(BaseModel):
     longitude: float

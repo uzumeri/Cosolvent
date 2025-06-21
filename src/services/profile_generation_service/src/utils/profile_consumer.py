@@ -40,8 +40,12 @@ async def process_metadata(message: aio_pika.IncomingMessage):
                 raise HTTPException(status_code=404, detail=f"Profile not found for user_id: {user_id}")
 
             # Generate new profile via mock LLM
+            active_profile = cur_profile["active_profile"] if cur_profile else None
             draft_profile = cur_profile["draft_profile"] if cur_profile else None
-            llm = LLMPROFILEGENERATION(draft_profile, metadata, user_id)
+            if active_profile and not draft_profile:
+                llm = LLMPROFILEGENERATION(active_profile, metadata, user_id)
+            else:
+                llm = LLMPROFILEGENERATION(draft_profile, metadata, user_id)
             generated_profile = llm.generate_profile()
             
             # Serialize date objects to datetime for MongoDB compatibility
@@ -59,7 +63,6 @@ async def process_metadata(message: aio_pika.IncomingMessage):
             profile_data = generated_profile.dict() if hasattr(generated_profile, 'dict') else generated_profile
             profile_data = convert_dates(profile_data)
             await PROFILECRUD.update_draft_profile(user_id, profile_data)
-            print("heyyyy")
             await publish_profile_generated_event({
                 "user_id": user_id,
             })

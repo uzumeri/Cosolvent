@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+openai
+pinecone
+aio-pika
+httpx
+pydantic
+motor
+python-dotenv
