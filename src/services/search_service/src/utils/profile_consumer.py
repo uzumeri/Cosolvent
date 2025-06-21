@@ -91,9 +91,9 @@ async def consume_profile_events():
 
     channel = await connection.channel()
     queue = await channel.declare_queue(
-        QueueEventNames.profile_generation_completed, durable=True
+        QueueEventNames.profile_approved, durable=True
     )
-    logger.info(f"Declared queue '{QueueEventNames.profile_generation_completed}', awaiting messages...")
+    logger.info(f"Declared queue '{QueueEventNames.profile_approved}', awaiting messages...")
 
     async with queue.iterator() as queue_iter:
         async for message in queue_iter:

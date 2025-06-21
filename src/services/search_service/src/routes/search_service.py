@@ -61,6 +61,7 @@ async def search_profiles(req: SearchRequest):
         raise HTTPException(status_code=500, detail="Search query failed")
 
     items = []
+    profiles = []
     for match in result.matches:
         items.append(SearchResponseItem(
             user_id=match.id,
