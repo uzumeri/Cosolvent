@@ -84,6 +84,20 @@ services:
     networks:
       - app_network
 
+  auth_service:
+    build:
+      context: src/services/auth_service
+      dockerfile: Dockerfile
+    ports:
+      - "8020:8020"
+    depends_on:
+      - mongodb
+    networks:
+      - app_network
+    env_file:
+      - .env
+      - ./src/services/auth_service/.env
+
   gateway:
     build:
       context: .
