@@ -1,3 +1,4 @@
+version: "3.8"
 services:
   # ─── Infrastructure ───────────────────────────────────────────────────────
 
@@ -103,19 +104,42 @@ services:
       - "${INDUSTRY_CONTEXT_SERVICE_PORT}:${INDUSTRY_CONTEXT_SERVICE_PORT}"
     depends_on:
       - redis
-      - rabbitmq
       - mongodb
     env_file:
       - .env
       - ./src/services/industry_context_service/.env
     networks:
       - app_network
+    volumes:
+      - shared-temp:/app/tmp
+
+  industry_context_worker:
+    build:
+      context: ./src/services/industry_context_service
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+      - mongodb
+    env_file:
+      - .env
+      - ./src/services/industry_context_service/.env
+    networks:
+      - app_network
+    volumes:
+      - shared-temp:/app/tmp
+    command: node dist/workers/index.js
 
   llm_orchestration_service:
     build:
       context: ./src/services/llm_orchestration_service
     ports:
       - "8005:8000"
+    environment:
+      - mongodb_uri=mongodb://mongodb:27017
+      - mongodb_db=administration
+      - mongodb_collection=config
+    depends_on:
+      - mongodb
     networks:
       - app_network
 
@@ -258,3 +282,5 @@ networks:
 volumes:
   s3-data:
   rabbitmq_data:
+  shared-temp:
+    driver: local

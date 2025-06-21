@@ -1,7 +1,18 @@
 .env
 .DS_Store
-.DS_Store
-.DS_Store
-.DS_Store
-.env
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
 
+# TypeScript / Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+*.tsbuildinfo

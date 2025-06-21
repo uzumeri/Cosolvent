@@ -11,13 +11,17 @@ from src.database.models.metadata_service import AssetModel
 from src.database.crud.metadata_service_crud import AssetCRUD
 from src.utils.mock_llm_extraction import ExtractUsingLLM
 import boto3
+from botocore.exceptions import ClientError
 from src.core.config import Settings 
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
+from fastapi import HTTPException 
+
+
 
 class AssetExtraction:
     """
-    Service for reading asset contents from an S3-compatible URL.
+    Service for reading asset contents from an S3 URL using boto3 and extracting text.
     """
 
     SUPPORTED_TYPES = {
@@ -28,63 +32,103 @@ class AssetExtraction:
     }
 
     @staticmethod
+    def _parse_s3_url(url: str):
+        """
+        Parse an S3 URL (virtual-hosted or path-style) into (bucket, key).
+        """
+        parsed = urlparse(url)
+        host = parsed.netloc
+        path = parsed.path.lstrip("/")  # e.g. "key/with/path.pdf"
+
+        # Virtual-hosted style: bucket.s3.region.amazonaws.com
+        # Host may be like: bucket.s3.amazonaws.com or bucket.s3.us-east-2.amazonaws.com
+        if host.endswith(".amazonaws.com"):
+            # bucket is first label before ".s3"
+            parts = host.split(".")
+            # Expect ["bucket", "s3", "region", "amazonaws", "com"]
+            if len(parts) >= 3 and parts[1] == "s3":
+                bucket = parts[0]
+                key = path
+                return bucket, key
+        # Fallback: maybe path-style: s3.amazonaws.com/bucket/key
+        # or custom domain that embeds bucket in path. Try splitting path:
+        parts = path.split("/", 1)
+        if len(parts) == 2:
+            bucket, key = parts
+            return bucket, key
+        raise ValueError(f"Cannot parse S3 URL: {url}")
+
+    @staticmethod
     async def read_from_s3(url: str, content_type: str) -> str:
         """
-        Fetches the file from the given S3 URL using the S3 API and returns its text content based on MIME type.
-
-        :param url: Public or pre-signed S3 URL of the asset
-        :param file_type: MIME type of the asset
+        Fetches the file from the given S3 URL using boto3 and returns its text content.
+        :param url: Public or presigned S3 URL of the asset
+        :param content_type: MIME type of the asset, e.g. "application/pdf"
         :returns: Extracted text content
-        :raises ValueError: If file_type is unsupported or URL invalid
+        :raises HTTPException: on invalid URL or S3 errors
         """
-        # Parse S3 URL to bucket and key
-        parsed = urlparse(url)
-        parts = parsed.path.lstrip("/").split("/", 1)
-        if len(parts) != 2:
-            raise ValueError(f"Invalid S3 URL: {url}")
-        bucket, key = parts
-        # Download object via S3 API
+        try:
+            bucket, key = AssetExtraction._parse_s3_url(url)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+        # Create S3 client
         s3 = boto3.client(
             "s3",
-            endpoint_url=Settings.Config.S3_ENDPOINT,
             aws_access_key_id=Settings.Config.S3_ACCESS_KEY,
             aws_secret_access_key=Settings.Config.S3_SECRET_KEY,
+            region_name=Settings.Config.S3_REGION
         )
-        response = s3.get_object(Bucket=bucket, Key=key)
-        # Read body asynchronously
+
+        # Get object
+        try:
+            response = s3.get_object(Bucket=bucket, Key=key)
+        except ClientError as e:
+            code = e.response["Error"].get("Code", "")
+            msg = e.response["Error"].get("Message", "")
+            # If using presigned URL, you could fetch via HTTP instead of S3 API
+            raise HTTPException(status_code=500, detail=f"S3 get_object failed: {code} {msg}")
+
+        # Read body in threadpool
         loop = asyncio.get_running_loop()
         data = await loop.run_in_executor(None, response["Body"].read)
 
-        # Dispatch based on MIME type
-        content_type = content_type.split("/")[1]
-        if content_type == "plain":
-            return str(data.decode('utf-8'))
+        # Determine subtype
+        subtype = content_type.split("/", 1)[-1]  # e.g. "pdf" or "msword"
 
-        if content_type == "pdf":
-            reader = PdfReader(BytesIO(data))
-            return "\n\n".join((page.extract_text() or "") for page in reader.pages)
-        if content_type == "msword":
-            return str(textract.process(input_data=data, extension='doc').decode('utf-8'))
+        if subtype == "plain":
+            return data.decode("utf-8", errors="ignore")
 
-        if content_type == "vnd.openxmlformats-officedocument.wordprocessingml.document":
-            with BytesIO(data) as bio:
-                doc = Document(bio)
-                return "\n\n".join(p.text for p in doc.paragraphs)
-        
-        else:
-            return ExtractUsingLLM(url , content_type).extract()
+        if subtype == "pdf":
+            try:
+                reader = PdfReader(BytesIO(data))
+                return "\n\n".join((page.extract_text() or "") for page in reader.pages)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"PDF parsing error: {e}")
+
+        if subtype == "msword":
+            try:
+                text = textract.process(input_data=data, extension="doc")
+                return text.decode("utf-8", errors="ignore")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"DOC parsing error: {e}")
+
+        if subtype == "vnd.openxmlformats-officedocument.wordprocessingml.document":
+            try:
+                with BytesIO(data) as bio:
+                    doc = Document(bio)
+                    return "\n\n".join(p.text for p in doc.paragraphs)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"DOCX parsing error: {e}")
+
+        # Fallback: use LLM extraction
+        return ExtractUsingLLM(url, content_type).extract()
+
     @staticmethod
     async def read_asset_by_id(asset_id: str) -> Optional[str]:
-        """
-        Fetches asset metadata from the database, then reads its content from S3 if supported.
-
-        :param asset_id: MongoDB ObjectId string
-        :returns: Extracted text or None if asset not found
-        """
         raw = await AssetCRUD.get_by_id(asset_id)
         if not raw:
             return None
-
         asset_url = raw["url"]
         file_type = raw["content_type"]
-        return await AssetExtraction.read_from_s3(asset_url,  file_type)
+        return await AssetExtraction.read_from_s3(asset_url, file_type)

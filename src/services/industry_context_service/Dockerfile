@@ -1,14 +1,45 @@
-# ./src/services/user_management_service/Dockerfile
-FROM python:3.11-slim
+# ---- Base stage with PNPM and Corepack ----
+FROM node:20-slim AS base
 
-# 1. Copy & install the shared library
-COPY src/shared /opt/shared
-WORKDIR /opt/shared
-RUN pip install --no-cache-dir -e .
+# Set environment variables for pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+WORKDIR /app
 
-# 2. Copy & install the service
-COPY src/services/user_management_service /opt/service
-WORKDIR /opt/service
-RUN pip install --no-cache-dir -r requirements.txt
+# ---- Dependencies stage (only prod deps) ----
+FROM base AS prod-deps
 
-CMD ["python", "src/main.py"]
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml* ./
+
+# Use Docker cache for node_modules
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+	pnpm install --prod --frozen-lockfile
+
+# ---- Build stage ----
+FROM base AS build
+
+COPY . .
+
+# Use Docker cache for dependencies
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+	pnpm install --frozen-lockfile
+
+RUN pnpm run build
+
+# ---- Final production image ----
+FROM node:20-slim AS final
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+WORKDIR /app
+
+# Install pnpm only
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy built app and only required files
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY package.json pnpm-lock.yaml ./
+
+CMD ["pnpm", "start"]

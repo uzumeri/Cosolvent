@@ -6,5 +6,6 @@ class Database:
         self.client = AsyncIOMotorClient(Config.MONGO_URI)
         self.db = self.client[Config.DB_NAME]
         self.assets = self.db["assets"]
+        self.profiles = self.db["profiles"]
 
 db = Database()

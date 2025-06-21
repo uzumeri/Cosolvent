@@ -19,6 +19,7 @@ class LLMCallRequest(BaseModel):
 class ProfileGenerationRequest(BaseModel):
     texts: List[str]
     service_name: str = "profile_generation"
+    profile_type: str  # Should be 'exporter' or 'importer'
 
 class TranslateRequest(BaseModel): # Added back for the translate endpoint
     text: str
@@ -117,25 +118,22 @@ async def metadata_extraction_endpoint(service_name: str = "metadata_extraction"
 
 @router.post("/generate-profile", response_model=ProfileResponse)
 async def generate_profile_endpoint(req: ProfileGenerationRequest):
-    logger.info(f"POST /generate-profile for service: {req.service_name} with {len(req.texts)} texts.")
+    logger.info(f"POST /generate-profile for service: {req.service_name} with {len(req.texts)} texts and profile_type: {req.profile_type}.")
     try:
-        profile_dict = await services.generate_structured_profile(texts=req.texts, service_name=req.service_name)
-        
-        # The service now raises exceptions for errors, so direct error check in dict might be less common
-        # unless specific partial errors are returned by design.
+        profile_dict = await services.generate_structured_profile(
+            texts=req.texts,
+            service_name=req.service_name,
+            profile_type=req.profile_type
+        )
         if isinstance(profile_dict, dict) and "error" in profile_dict:
             logger.error(f"Profile generation service '{req.service_name}' returned an error structure: {profile_dict.get('details')}")
-            # TODO: Standardize error responses from services. If an error occurs that isn't an exception,
-            # this path might still be hit. Consider if services should always raise exceptions on failure.
             raise HTTPException(status_code=422, detail=profile_dict) 
-        
         return ProfileResponse(profile=profile_dict)
     except ConfigurationException as e:
         logger.error(f"Configuration error in /generate-profile for service '{req.service_name}': {e}")
         raise HTTPException(status_code=400, detail=f"Configuration error: {e}")
     except LLMOrchestrationException as e:
         logger.error(f"LLM Orchestration error in /generate-profile for service '{req.service_name}': {e}")
-        # TODO: Differentiate between client errors (4xx) and server errors (5xx) from LLMOrchestrationException if possible
         raise HTTPException(status_code=500, detail=f"LLM service error: {e}")
     except Exception as e:
         logger.exception(f"Unexpected error in /generate-profile for service '{req.service_name}'")
