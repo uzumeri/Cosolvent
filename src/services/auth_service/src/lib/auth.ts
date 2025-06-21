@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { connectToDB } from "./db";
 import { admin, openAPI } from "better-auth/plugins";
+import { beforeSignUp } from "@/hooks/createAuth";
 
 const db = await connectToDB();
 
@@ -12,5 +13,16 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true,
 	},
-	plugins: [openAPI(),admin()],
+	user: {
+		additionalFields: {
+			userType: {
+				type: "string",
+				input: true,
+			},
+		},
+	},
+	hooks: {
+		before: beforeSignUp(),
+	},
+	plugins: [openAPI(), admin()],
 });
