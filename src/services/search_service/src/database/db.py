@@ -1,13 +1,8 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-from src.core.config import Settings
+import pinecone
+from core.config import settings
+from core.pinecone import init_pinecone, get_index
 
-class Database:
-    def __init__(self):
-        # Initialize MongoDB client and select the database
-        self.client = AsyncIOMotorClient(Settings.Config.MONGO_URI)
-        self.db = self.client[Settings.Config.DB_NAME]
-        # Profiles collection
-        self.profiles = self.db['profiles']
-
-
-db = Database()
+# Initialize Pinecone client
+init_pinecone()
+# Get index by host URL
+index = get_index()

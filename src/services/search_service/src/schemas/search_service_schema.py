@@ -1,16 +1,23 @@
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import List, Optional
+from datetime import datetime
+
+class AssetReadyForIndexing(BaseModel):
+    asset_id: str
+    user_id: str
+    description: str
 
 class SearchRequest(BaseModel):
     query: str
-    country: Optional[str] = None
-    categories: Optional[List[str]] = None
-    top_k: Optional[int] = 100
+    user_id: Optional[str] = None
+    date_from: Optional[datetime] = None
+    date_to: Optional[datetime] = None
+    top_k: int = 10
 
-class SearchResponseItem(BaseModel):
-    user_id: str
+class SearchResult(BaseModel):
+    asset_id: str
     score: float
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict
 
 class SearchResponse(BaseModel):
-    results: List[SearchResponseItem]
+    results: List[SearchResult]

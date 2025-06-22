@@ -1,5 +1,4 @@
 version: "3.8"
-
 services:
   # ─── Infrastructure ───────────────────────────────────────────────────────
 
@@ -225,7 +224,7 @@ services:
       # If your entrypoint or app reads a PORT var:
       PORT: "8009"
     ports:
-      - "8009:8009"
+      - "8009:8000"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -236,6 +235,9 @@ services:
       #   condition: service_healthy
     networks:
       - app_network
+    env_file:
+      - .env
+      - src/services/search_service/.env
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8009/healthz || exit 1"]
       interval: 30s

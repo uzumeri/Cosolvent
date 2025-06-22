@@ -4,6 +4,8 @@ from datetime import date, datetime
 import logging
 
 class QueueEventNames:
+    asset_uploaded = "asset.uploaded"
+    asset_ready_for_indexing = "asset.ready_for_indexing"
     asset_upload = "asset_upload"
     metadata_completed = "metadata_completed"
     profile_generation_completed = "profile_generation_completed"
@@ -159,8 +161,8 @@ class DetailFarmerProfileModel(BaseModel):
 class ProfileResponse(BaseModel):
     id: str = Field(..., alias="_id")
     basic_info: BasicProfileBase
-    active_profile: Optional[DetailFarmerProfileModel] = {}
-    draft_profile: Optional[DetailFarmerProfileModel] = {}
+    active_profile: Optional[DetailFarmerProfileModel] = None
+    draft_profile: Optional[DetailFarmerProfileModel] = None
 
     def to_dict(self) -> dict:
         """
