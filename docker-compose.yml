@@ -83,6 +83,20 @@ services:
     networks:
       - app_network
 
+  auth_service:
+    build:
+      context: src/services/auth_service
+      dockerfile: Dockerfile
+    ports:
+      - "8020:8020"
+    depends_on:
+      - mongodb
+    networks:
+      - app_network
+    env_file:
+      - .env
+      - ./src/services/auth_service/.env
+
   gateway:
     build:
       context: .
@@ -197,17 +211,38 @@ services:
     build:
       context: .
       dockerfile: src/services/search_service/Dockerfile
+    environment:
+      # OpenAI & Pinecone
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      PINECONE_API_KEY: "${PINECONE_API_KEY}"
+      PINECONE_INDEX_NAME: "${PINECONE_INDEX_NAME}"
+      PINECONE_INDEX_HOST: "${PINECONE_INDEX_HOST}"
+      # Your profile service endpoint (internal DNS/name)
+      PROFILE_SERVICE_URL: "http://profile_management_service:8000"
+      # RabbitMQ URL; adjust user/pass/host as needed
+      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+      # If your entrypoint or app reads a PORT var:
+      PORT: "8009"
     ports:
       - "8009:8000"
     depends_on:
-      - redis
-      - rabbitmq
-      - mongodb
+      rabbitmq:
+        condition: service_healthy
+      # If you truly depend on redis or mongodb in search_service, keep them; otherwise you can omit:
+      # redis:
+      #   condition: service_healthy
+      # mongodb:
+      #   condition: service_healthy
     networks:
       - app_network
     env_file:
       - .env
       - src/services/search_service/.env
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8009/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   translation_service:
     build:

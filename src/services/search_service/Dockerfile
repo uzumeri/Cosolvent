@@ -1,4 +1,3 @@
-# ./src/services/user_management_service/Dockerfile
 FROM python:3.11-slim
 
 WORKDIR /app
