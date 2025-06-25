@@ -60,6 +60,7 @@ services:
     depends_on:
       - admin_service
       - asset_service
+      - auth_service
       - industry_context_service
       - llm_orchestration_service
       - metadata_service
@@ -100,6 +101,18 @@ services:
       - .env
     networks:
       - app_network
+
+  auth_service:
+    build:
+      context: src/services/auth_service
+      dockerfile: Dockerfile
+    depends_on:
+      - mongodb
+    networks:
+      - app_network
+    env_file:
+      - .env
+      - ./src/services/auth_service/.env
 
   industry_context_service:
     build:
