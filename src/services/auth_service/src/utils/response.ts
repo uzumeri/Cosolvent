@@ -3,6 +3,7 @@ import { StatusCodes, getReasonPhrase } from "http-status-codes";
 
 export type SuccessCode = "SUCCESS";
 export type ErrorCode =
+	| "UNAUTHORIZED"
 	| "INTERNAL_ERROR"
 	| "NOT_FOUND"
 	| "BAD_REQUEST"
