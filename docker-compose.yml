@@ -36,16 +36,31 @@ services:
           - mongodb
 
   # ─── Frontend ─────────────────────────────────────────────────
+  # ─── Reverse Proxy ────────────────────────────────────────────────
 
   frontend:
     build:
       context: ./frontend
+  reverse_proxy:
+    image: nginx:latest
     ports:
       - "3000:3000"
     environment:
       - ./frontend/.env
+      - "80:80"
+    volumes:
+      - ./src/services/reverse_proxy/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - gateway
+      - admin_service
+      - asset_service
+      - industry_context_service
+      - llm_orchestration_service
+      - metadata_service
+      - profile_generation_service
+      - profile_management_service
+      - search_service
+      - translation_service
+      - user_management_service
     networks:
       - app_network
 
