@@ -35,18 +35,25 @@ services:
           - mongo
           - mongodb
 
+
   # ─── Frontend ─────────────────────────────────────────────────
-  # ─── Reverse Proxy ────────────────────────────────────────────────
 
   frontend:
     build:
       context: ./frontend
-  reverse_proxy:
-    image: nginx:latest
     ports:
       - "3000:3000"
     environment:
       - ./frontend/.env
+    networks:
+      - app_network
+
+
+  # ─── Reverse Proxy ────────────────────────────────────────────────
+
+  reverse_proxy:
+    image: nginx:latest
+    ports:
       - "80:80"
     volumes:
       - ./src/services/reverse_proxy/nginx.conf:/etc/nginx/nginx.conf:ro
@@ -70,8 +77,6 @@ services:
     build:
       context: .
       dockerfile: src/services/admin_service/Dockerfile
-    ports:
-      - "8001:8001"
     depends_on:
       - redis
       - rabbitmq
@@ -86,8 +91,6 @@ services:
     environment:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - MONGO_URI=mongodb://mongodb:27017
-    ports:
-      - "8002:8002"
     depends_on:
       - redis
       - rabbitmq
@@ -102,8 +105,6 @@ services:
     build:
       context: ./src/services/industry_context_service
       dockerfile: Dockerfile
-    ports:
-      - "${INDUSTRY_CONTEXT_SERVICE_PORT}:${INDUSTRY_CONTEXT_SERVICE_PORT}"
     depends_on:
       - redis
       - mongodb
@@ -134,8 +135,6 @@ services:
   llm_orchestration_service:
     build:
       context: ./src/services/llm_orchestration_service
-    ports:
-      - "8005:8000"
     environment:
       - mongodb_uri=mongodb://mongodb:27017
       - mongodb_db=administration
@@ -149,8 +148,6 @@ services:
     build:
       context: .
       dockerfile: src/services/metadata_service/Dockerfile
-    ports:
-      - "8017:8006"
     environment:
       - MONGO_URI=mongodb://mongodb:27017
     env_file:
@@ -166,8 +163,6 @@ services:
     build:
       context: .
       dockerfile: src/services/profile_generation_service/Dockerfile
-    ports:
-      - "8007:8007"
     environment:
       - MONGO_URI=mongodb://mongodb:27017
     env_file:
@@ -183,8 +178,6 @@ services:
     build:
       context: .
       dockerfile: src/services/profile_management_service/Dockerfile
-    ports:
-      - "8003:8003"
     depends_on:
       - redis
       - rabbitmq
@@ -199,20 +192,6 @@ services:
     build:
       context: .
       dockerfile: src/services/search_service/Dockerfile
-    environment:
-      # OpenAI & Pinecone
-      OPENAI_API_KEY: "${OPENAI_API_KEY}"
-      PINECONE_API_KEY: "${PINECONE_API_KEY}"
-      PINECONE_INDEX_NAME: "${PINECONE_INDEX_NAME}"
-      PINECONE_INDEX_HOST: "${PINECONE_INDEX_HOST}"
-      # Your profile service endpoint (internal DNS/name)
-      PROFILE_SERVICE_URL: "http://profile_management_service:8000"
-      # RabbitMQ URL; adjust user/pass/host as needed
-      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
-      # If your entrypoint or app reads a PORT var:
-      PORT: "8009"
-    ports:
-      - "8009:8000"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -236,8 +215,6 @@ services:
     build:
       context: .
       dockerfile: src/services/translation_service/Dockerfile
-    ports:
-      - "8010:8010"
     depends_on:
       - redis
       - rabbitmq
@@ -249,14 +226,13 @@ services:
     build:
       context: .
       dockerfile: src/services/user_management_service/Dockerfile
-    ports:
-      - "8011:8011"
     depends_on:
       - redis
       - rabbitmq
       - mongodb
     networks:
       - app_network
+
   s3-server:
     image: minio/minio:latest
     container_name: UploadServer
