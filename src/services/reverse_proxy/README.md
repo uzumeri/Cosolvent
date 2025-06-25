@@ -26,6 +26,7 @@ This proxy listens on `http://localhost` (port 80) and exposes public endpoints 
 | Route Prefix              | Proxies To                         | Status     |
 |---------------------------|------------------------------------|------------|
 | `/asset/`                 | `asset_service:8002`               | ✅ Active  |
+| `/auth/`                  | `auth_service:8020`                | ✅ Active  |
 | `/industry-context/`      | `industry_context_service:8004`    | ✅ Active  |
 | `/llm/`                   | `llm_orchestration_service:8000`   | ✅ Active  |
 | `/profile-gen/`           | `profile_generation_service:8007`  | ✅ Active  |
@@ -65,6 +66,11 @@ Inside the `server {}` block:
 ```nginx
 location /<route-prefix>/ {
     proxy_pass http://<your_service_name>/;
+
+    # Optional: auth (protected by reverse proxy)
+    auth_request /auth/login;
+    proxy_set_header proxy_set_header X-User $auth_user; # set user on header as X-User, if auth is successful
+
 
     # Optional: enable rate limiting
     limit_req zone=api_limit burst=20 nodelay;
