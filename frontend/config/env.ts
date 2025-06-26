@@ -1,31 +1,21 @@
-import path from "node:path";
-import { config } from "dotenv";
-import { expand } from "dotenv-expand";
 import { z } from "zod";
 
-expand(
-	config({
-		path: path.resolve(
-			process.cwd(),
-			process.env.NODE_ENV === "test" ? ".env.test" : ".env",
-		),
-	}),
-);
-
 const EnvSchema = z.object({
-	NODE_ENV: z
-		.enum(["development", "test", "production"])
-		.default("development"),
-	NEXT_PUBLIC_API_BASE_URL: z.string().default("http://localhost/"),
+	NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+	NEXT_PUBLIC_API_BASE_URL: z.string().url(),
+	NEXT_PUBLIC_APP_URL: z.string().url(),
 });
 
-// Validate env vars
-const parsed = EnvSchema.safeParse(process.env);
+const parsed = EnvSchema.safeParse({
+	NODE_ENV: process.env.NODE_ENV,
+	NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+	NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+});
 
 if (!parsed.success) {
 	console.error("Invalid environment variables:");
 	console.error(JSON.stringify(parsed.error.flatten().fieldErrors, null, 2));
-	process.exit(1);
+	throw new Error("Invalid environment variables");
 }
 
 const env = parsed.data;
