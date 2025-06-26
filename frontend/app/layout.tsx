@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter, Lora, Roboto } from "next/font/google";
 import "./globals.css";
 import Chatbot from "@/components/chatbot/chatbot";
 import { QueryProvider } from "@/lib/query/queryProvider";
+import { AuthProvider } from "@/providers/authProvider";
 
 const inter = Inter({
 	subsets: ["latin"],
@@ -46,10 +47,12 @@ export default function RootLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} antialiased`}
 			>
-				<QueryProvider>
-					<Chatbot />
-					{children}
-				</QueryProvider>
+				<AuthProvider>
+					<QueryProvider>
+						<Chatbot />
+						{children}
+					</QueryProvider>
+				</AuthProvider>
 			</body>
 		</html>
 	);

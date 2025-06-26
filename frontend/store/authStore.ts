@@ -7,7 +7,7 @@ export enum UserType {
 	SERVICE_PROVIDER = "SERVICE_PROVIDER",
 }
 
-interface Session {
+export interface Session {
 	user: {
 		id: string;
 		name: string;

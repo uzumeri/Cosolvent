@@ -5,7 +5,7 @@ import { PGPButton } from "@/components/ui/pgp-button";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function SignInPage() {
 	return (
 		// This is the new glassmorphism container
 		<motion.div
