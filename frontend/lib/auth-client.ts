@@ -4,7 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { adminClient, inferAdditionalFields } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
-	baseURL: env.NEXT_PUBLIC_API_BASE_URL,
+	baseURL: `${env.NEXT_PUBLIC_API_BASE_URL}/auth/api/auth`,
 	plugins: [
 		nextCookies(),
 		adminClient(),
