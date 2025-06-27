@@ -1,6 +1,6 @@
-import axiosInstance from "./axios";
 import type { Session } from "@/store/authStore";
 import type { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
+import axiosInstance from "./axios";
 
 export const getSession = async (
 	cookies: ReadonlyRequestCookies,

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { useSession } from "@/lib/auth-client";
 import { type Session, useAuthStore } from "@/store/authStore";
+import { useEffect } from "react";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const { data: session, isPending } = useSession();
