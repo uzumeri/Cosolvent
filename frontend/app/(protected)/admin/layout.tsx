@@ -1,4 +1,6 @@
-import { authClient } from "@/lib/auth-client";
+import { getSession } from "@/lib/api/getSession";
+import type { Session } from "@/store/authStore";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -7,17 +9,22 @@ export default async function AdminLayout({
 }: {
 	children: ReactNode;
 }) {
-	const session = await authClient.getSession();
+	let session: Session;
 
-	if (!session || !session.data) {
+	try {
+		session = await getSession(await cookies());
+	} catch (error) {
+		// Session token missing or invalid
 		redirect("/signin");
 	}
 
-	// Second, check if the user's role is 'admin'
-	if (session.data.user.role !== "admin") {
+	if (session.user.role === "admin") {
+		return <>{children}</>;
+	}
+
+	if (session.user.role === "user") {
 		redirect("/user");
 	}
 
-	// If all checks pass, render the child page
-	return <>{children}</>;
+	redirect("/signin");
 }
