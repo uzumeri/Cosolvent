@@ -52,15 +52,17 @@ const LandingHeader = () => {
 					</Link>
 				</nav>
 				<div className="flex items-center gap-2">
-					<PGPButton
-						variant="outline"
-						size="md"
-						className={
-							!scrolled ? "text-white border-white/50 hover:bg-white/10" : ""
-						}
-					>
-						Log In
-					</PGPButton>
+					<Link href="/signin" passHref>
+						<PGPButton
+							variant="outline"
+							size="md"
+							className={
+								!scrolled ? "text-white border-white/50 hover:bg-white/10" : ""
+							}
+						>
+							SignIn
+						</PGPButton>
+					</Link>
 					<PGPButton variant="primary" size="md">
 						Sign Up
 					</PGPButton>
