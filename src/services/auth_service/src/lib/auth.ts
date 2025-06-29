@@ -10,6 +10,7 @@ const db = await connectToDB();
 export const auth = betterAuth({
 	secret: env.BETTER_AUTH_SECRET,
 	database: mongodbAdapter(db),
+	trustedOrigins: [env.FRONTEND_URL],
 	emailAndPassword: {
 		enabled: true,
 	},

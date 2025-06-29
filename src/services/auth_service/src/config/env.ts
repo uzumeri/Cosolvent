@@ -18,6 +18,7 @@ const EnvSchema = z.object({
 		.default("development"),
 	PORT: z.coerce.number().default(8020),
 	BASE_URL: z.string(),
+	FRONTEND_URL: z.string(),
 	MONGODB_URI: z.string(),
 	BETTER_AUTH_SECRET: z.string(),
 });
