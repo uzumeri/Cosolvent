@@ -1,4 +1,9 @@
-from src.database.models.profile_management_service import DetailFarmerProfileModel, ContactInfoModel, FarmDetailsModel, ProductModel
+from src.database.models.profile_management_service import (
+    DetailFarmerProfileModel,
+    ContactInfoModel,
+    FarmDetailsModel,
+    ProductModel,
+)
 from datetime import date
 
 class LLMPROFILEGENERATION:
