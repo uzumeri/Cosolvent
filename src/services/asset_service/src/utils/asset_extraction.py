@@ -7,7 +7,7 @@ import textract
 from typing import Optional
 from bson import ObjectId
 from src.database.db import db
-from src.database.models.asset_service import AssetModel
+from src.database.models.asset_model import AssetModel
 from src.database.crud.asset_service_crud import AssetCRUD
 from src.utils.mock_llm_extraction import ExtractUsingLLM
 import boto3
