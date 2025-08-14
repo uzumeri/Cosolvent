@@ -1,12 +1,13 @@
 import io
 from uuid import uuid4
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, status
 import boto3
 from botocore.exceptions import ClientError
 from bson import ObjectId
+import httpx
 
 from src.utils.publisher import publish_asset
-from src.schemas.asset_service_schema import AssetResponse
+from src.schemas.asset_service_schema import AssetResponse, MetadataResponse
 from src.database.crud.asset_service_crud import AssetCRUD
 from src.database.crud.profile_generation_crud import PROFILECRUD
 from src.core.config import Config
@@ -49,6 +50,7 @@ def ensure_bucket_exists(bucket_name: str):
             msg = err.get("Message", "")
             raise HTTPException(status_code=500, detail=f"Failed to access bucket: {msg}") from e
 
+# Asset CRUD Operations
 @router.post("/assets", response_model=AssetResponse)
 async def upload_asset(
     file: UploadFile = File(...),
@@ -115,3 +117,113 @@ async def get_assets(
         return assets
     else:
         raise HTTPException(status_code=400, detail="Either user_id or asset_id must be provided")
+
+@router.put("/assets/{asset_id}", response_model=AssetResponse)
+async def update_asset(asset_id: str, metadata: dict):
+    try:
+        ObjectId(asset_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid asset_id format")
+    
+    updated_asset = await AssetCRUD.update(asset_id, metadata)
+    if not updated_asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return updated_asset
+
+@router.delete("/assets/{asset_id}", status_code=status.HTTP_200_OK)
+async def delete_asset(asset_id: str):
+    try:
+        ObjectId(asset_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid asset_id format")
+    
+    deleted = await AssetCRUD.delete(asset_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return {"success": True, "message": f"Asset {asset_id} deleted successfully"}
+
+# Metadata Operations
+@router.post("/assets/{asset_id}/metadata", response_model=MetadataResponse)
+async def describe_asset(asset_id: str):
+    """
+    HTTP trigger to describe an asset by ID.
+    """
+    return await process_asset(asset_id)
+
+@router.get("/assets/{asset_id}/metadata", response_model=MetadataResponse)
+async def get_asset_metadata(asset_id: str):
+    """
+    Get metadata for an asset.
+    """
+    metadata = await AssetCRUD.get_metadata(asset_id)
+    if not metadata:
+        raise HTTPException(status_code=404, detail="Asset metadata not found")
+    return metadata
+
+# Translation Operations
+@router.post("/assets/{asset_id}/translate")
+async def translate_asset_content(asset_id: str, target_language: str = "en"):
+    """
+    Translate asset content to target language.
+    """
+    try:
+        ObjectId(asset_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid asset_id format")
+    
+    translation = await AssetCRUD.translate_content(asset_id, target_language)
+    if not translation:
+        raise HTTPException(status_code=404, detail="Asset not found or translation failed")
+    return translation
+
+@router.get("/assets/{asset_id}/translations")
+async def get_asset_translations(asset_id: str):
+    """
+    Get all translations for an asset.
+    """
+    try:
+        ObjectId(asset_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid asset_id format")
+    
+    translations = await AssetCRUD.get_translations(asset_id)
+    if not translations:
+        raise HTTPException(status_code=404, detail="Asset translations not found")
+    return translations
+
+async def process_asset(asset_id: str) -> MetadataResponse:
+    """
+    Fetch asset bytes and call LLM to generate description.
+    """
+    # 1) Fetch asset metadata (to get download URL) from Asset Service
+    asset = await AssetCRUD.get_by_id(asset_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    download_url = asset.get("url")
+    if not download_url:
+        raise HTTPException(status_code=400, detail="Invalid download URL")
+    
+    # 2) Download binary data
+    async with httpx.AsyncClient() as client:
+        resp_file = await client.get(download_url)
+        resp_file.raise_for_status()
+        data = resp_file.content
+    
+    # 3) Call LLM Orchestration metadata endpoint
+    files = {"file": (f"{asset_id}", data, asset.get("content_type", "application/octet-stream"))}
+    
+    # For now, return basic metadata - in production, this would call the LLM service
+    description = f"Asset {asset_id} of type {asset.get('file_type', 'unknown')}"
+    
+    # Save metadata to database
+    metadata_data = {
+        "asset_id": asset_id,
+        "description": description,
+        "file_type": asset.get("file_type"),
+        "content_type": asset.get("content_type")
+    }
+    
+    await AssetCRUD.save_metadata(metadata_data)
+    
+    return MetadataResponse(asset_id=asset_id, description=description)
