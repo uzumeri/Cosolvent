@@ -7,3 +7,7 @@ pydantic
 python-multipart
 tenacity
 aio_pika
+httpx
+PyPDF2
+python-docx
+textract
