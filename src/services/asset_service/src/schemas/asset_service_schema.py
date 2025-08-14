@@ -18,3 +18,17 @@ class AssetResponse(AssetCreate):
         default_factory=MetaData,
         description="Additional metadata (e.g., description)"
     )
+
+class MetadataResponse(BaseModel):
+    """Response model for asset metadata"""
+    asset_id: str = Field(..., description="ID of the asset")
+    description: str = Field(..., description="Generated description of the asset")
+    file_type: Optional[str] = Field(None, description="Type of the file")
+    content_type: Optional[str] = Field(None, description="MIME type of the file")
+
+class TranslationResponse(BaseModel):
+    """Response model for asset translations"""
+    asset_id: str = Field(..., description="ID of the asset")
+    target_language: str = Field(..., description="Target language for translation")
+    translated_content: str = Field(..., description="Translated content")
+    translation_status: str = Field(..., description="Status of the translation")
