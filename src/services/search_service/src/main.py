@@ -3,11 +3,11 @@ import logging
 import aio_pika
 from fastapi import FastAPI
 
-from core.config import settings
-from core.rabbitmq import connect, consume_asset_ready
-import core.rabbitmq as _rmq
-from core.pinecone import init_pinecone
-from routes.search_service import router as search_router
+from src.core.config import settings
+from src.core.rabbitmq import connect, consume_asset_ready
+import src.core.rabbitmq as _rmq
+from src.core.pinecone import init_pinecone
+from src.routes.search_service import router as search_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

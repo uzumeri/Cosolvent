@@ -1,6 +1,6 @@
 import pinecone
-from core.config import settings
-from core.pinecone import init_pinecone, get_index
+from src.core.config import settings
+from src.core.pinecone import init_pinecone, get_index
 
 # Initialize Pinecone client
 init_pinecone()

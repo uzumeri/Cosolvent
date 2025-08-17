@@ -2,9 +2,9 @@ import openai
 from cachetools import TTLCache
 from datetime import datetime
 
-from core.config import settings
-from database.crud.search_service_crud import query_vectors
-from schemas.search_service_schema import SearchRequest, SearchResponse, SearchResult
+from src.core.config import settings
+from src.database.crud.search_service_crud import query_vectors
+from src.schemas.search_service_schema import SearchRequest, SearchResponse, SearchResult
 
 openai.api_key = settings.OPENAI_API_KEY
 
@@ -51,9 +51,9 @@ def search_assets(req: SearchRequest) -> SearchResponse:
     if req.date_from or req.date_to:
         date_filter = {}
         if req.date_from:
-            date_filter["$gte"] = req.date_from.isoformat()
+            date_filter["$gte"] = int(req.date_from.timestamp())
         if req.date_to:
-            date_filter["$lte"] = req.date_to.isoformat()
+            date_filter["$lte"] = int(req.date_to.timestamp())
         filters["created_at"] = date_filter
 
     # Query Pinecone

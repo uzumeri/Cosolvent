@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-from database.db import index
+from src.database.db import index
 
 
 def upsert_vector(asset_id: str, vector: List[float], metadata: Dict[str, Any]) -> None:

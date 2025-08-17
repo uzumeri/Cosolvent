@@ -7,9 +7,11 @@ import openai
 from aio_pika import connect_robust
 from pydantic import BaseModel
 
+import httpx
 from src.core.config import settings
 from src.core.vector_store import index
 from src.database.crud.profile_crud import PROFILECRUD
+from src.schemas.search_service_schema import CompanyProfile, IndividualProfile
 from shared.events import QueueEventNames
 
 logging.basicConfig(level=logging.INFO)
@@ -80,6 +82,16 @@ async def handle_profile_generated(user_id: str):
         logger.info(f"Upserted profile vector for user {user_id}")
     except Exception as e:
         logger.error(f"Pinecone upsert failed for {user_id}: {e}")
+
+async def fetch_profile(user_id: str) -> BaseModel:
+    url = f"{settings.PROFILE_SERVICE_URL}/farmer-profile/{user_id}"
+    async with httpx.AsyncClient() as client:
+        res = await client.get(url)
+        res.raise_for_status()
+        data = res.json()
+    if data.get("type") == "company":
+        return CompanyProfile(**data)
+    return IndividualProfile(**data)
 
 async def consume_profile_events():
     logger.info("Connecting to RabbitMQ...")
