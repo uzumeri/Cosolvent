@@ -13,6 +13,9 @@ from src.database.crud.profile_crud import (
     generate_ai_profile as generate_ai_profile_crud,
     approve_ai_draft as approve_ai_draft_crud,
     reject_ai_draft as reject_ai_draft_crud,
+    add_file_in_producer_profile,
+    update_file_in_producer_profile as update_file,
+    remove_file_from_producer_profile as remove_file
     
 )
 from src.schema.profile_schema import (
@@ -231,3 +234,41 @@ async def reject_ai_draft(producer_id: str, db=Depends(get_mongo_service)):
     return {"success": True, "message": "AI draft rejected."}
 
 
+@router.post("/profiles/{producer_id}/files", response_model=ProducerSchema)
+async def add_file_to_producer_profile(
+    producer_id: str,
+    file: ProducerFileSchema = Body(...),
+    db=Depends(get_mongo_service)
+):
+    """
+    Adds a file to the producer's profile.
+    """
+    updated_profile = await add_file_in_producer_profile(db, producer_id, file)
+    if not updated_profile:
+        raise HTTPException(status_code=404, detail="Profile not found.")
+    return jsonable_encoder(updated_profile)
+@router.put("/profiles/{producer_id}/files", response_model=ProducerSchema)
+async def update_file_in_producer_profile(
+    producer_id: str,
+    file: ProducerFileSchema = Body(...),
+    db=Depends(get_mongo_service)
+):
+    """
+    Updates a file in the producer's profile.
+    """
+    updated_profile = await update_file(db, producer_id, file)
+    if not updated_profile:
+        raise HTTPException(status_code=404, detail="Profile or file not found.")
+    return jsonable_encoder(updated_profile)
+@router.delete("/profiles/{producer_id}/files/{file_id}", response_model=SuccessResponse)
+async def remove_file_from_producer_profile(
+    producer_id: str,
+    file_id: str,
+    db=Depends(get_mongo_service)
+):
+    """
+    Removes a file from the producer's profile.
+    """
+    if not await remove_file(db, producer_id, file_id):
+        raise HTTPException(status_code=404, detail="Profile or file not found.")
+    return {"success": True, "message": "File removed successfully."}

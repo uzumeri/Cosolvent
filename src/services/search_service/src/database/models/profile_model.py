@@ -1,197 +1,53 @@
-from pydantic import BaseModel, Field, HttpUrl
-from typing import List, Optional, Literal
-from datetime import date, datetime
-import logging
+# profile_model.py
+from pydantic import BaseModel, EmailStr, Field
+from typing import List, Optional
+from uuid import UUID
+from datetime import datetime
+from bson import ObjectId
+from .producer_file_model import ProducerFileModel
+from pydantic_core.core_schema import CoreSchema
+from pydantic.json_schema import JsonSchemaValue
+
+class PyObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v, *args, **kwargs):
+        if not ObjectId.is_valid(v):
+            raise ValueError("Invalid objectid")
+        return ObjectId(v)
+
+    @classmethod
+    def __get_pydantic_json_schema__(cls, schema: CoreSchema, handler) -> JsonSchemaValue:
+        # Use a simple string schema
+        return {"type": "string"}
 
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-class BasicProfileBase(BaseModel):
-    user_id: str
-    first_name: str
-    middle_name: str
-    last_name: str
-    birth_date: datetime
-    phone_number: str
-
-class CoordinateModel(BaseModel):
-    longitude: float
-    latitude: float
-
-
-class MediaModel(BaseModel):
-    url: HttpUrl
-    type: Literal['image', 'pdf', 'video', 'other', 'docx', 'txt']
-    title: Optional[str] = None
-    description: Optional[str] = None
-    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class QualitySpecModel(BaseModel):
-    moisture_percent: Optional[float] = None
-    protein_percent: Optional[float] = None
-    test_weight: Optional[float] = None
-    foreign_material_percent: Optional[float] = None
-    lab_report_url: Optional[HttpUrl] = None
-
-
-class ProductModel(BaseModel):
-    name: str
-    category: str
-    variety: Optional[str] = None
-    quantity_available: float
-    unit: str  # e.g., "tonnes"
-    price_min: Optional[float] = None
-    price_max: Optional[float] = None
-    price_currency: Optional[str] = None  # e.g., "CAD"
-    harvest_date: Optional[date] = None
-    delivery_window_start: Optional[date] = None
-    delivery_window_end: Optional[date] = None
-    incoterms: Optional[List[str]] = None
-    packaging_options: Optional[List[str]] = None
-    min_order_quantity: Optional[float] = None
-    location: Optional[CoordinateModel] = None
-    quality_specs: Optional[QualitySpecModel] = None
-    media: Optional[List[MediaModel]] = None
-    delivery_location: Optional[str] = None  # e.g., "farm gate" or "nearest port"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: Optional[datetime] = None
-
-
-class CertificateModel(BaseModel):
-    name: str
-    issuer: Optional[str] = None
-    valid_from: Optional[date] = None
-    valid_to: Optional[date] = None
-    document_url: Optional[HttpUrl] = None
-
-
-class DocumentModel(BaseModel):
-    name: str
-    url: HttpUrl
-    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class BusinessDetailsModel(BaseModel):
-    entity_type: Optional[str] = None
-    registration_number: Optional[str] = None
-    insurance_info: Optional[str] = None
-    tax_info: Optional[str] = None
-    docs: Optional[List[DocumentModel]] = None
-
-
-class ContactInfoModel(BaseModel):
-    website: Optional[HttpUrl] = None
-    social_links: Optional[List[HttpUrl]] = None
-
-
-class LocationModel(BaseModel):
-    province: Optional[str] = None
-    city: Optional[str] = None
-    address_line: Optional[str] = None
-    coordinates: Optional[CoordinateModel] = None
-
-
-class FarmDetailsModel(BaseModel):
-    acreage: Optional[float] = None
-    practices: Optional[List[str]] = None  # e.g., ['organic', 'no-till']
-    planting_start: Optional[date] = None
-    harvest_end: Optional[date] = None
-    sustainability_notes: Optional[str] = None
-
-
-class LogisticsModel(BaseModel):
-    nearest_ports: Optional[List[str]] = None
-    transport_options: Optional[List[str]] = None
-    storage_capacity: Optional[str] = None
-    export_experience: Optional[str] = None
-
-
-class PaymentTermsModel(BaseModel):
-    methods: Optional[List[str]] = None  # e.g., ['wire transfer', 'letter of credit']
-    terms_description: Optional[str] = None
-    currency_preferences: Optional[List[str]] = None
-
-
-class VerificationStatusModel(BaseModel):
-    status: Literal['unverified', 'pending', 'verified'] = 'unverified'
-    verified_at: Optional[datetime] = None
-    notes: Optional[str] = None
-
-
-class NotificationPrefsModel(BaseModel):
-    inquiries: bool = True
-    messages: bool = True
-    updates: bool = True
-
-
-class CommunicationModel(BaseModel):
-    languages: Optional[List[str]] = None
-    response_time_estimate: Optional[str] = None  # e.g., "48 hours"
-    notification_prefs: NotificationPrefsModel = Field(default_factory=NotificationPrefsModel)
-
-
-class DetailFarmerProfileModel(BaseModel):
+class ProducerModel(BaseModel):
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     farm_name: str
-    contact_person: str
-    location: LocationModel = Field(default_factory=LocationModel)
-    description: Optional[str] = None
-    profile_image_url: Optional[HttpUrl] = None
-    contact: ContactInfoModel = Field(default_factory=ContactInfoModel)
-    business_details: BusinessDetailsModel = Field(default_factory=BusinessDetailsModel)
-    certifications: Optional[List[CertificateModel]] = None
-    farm_details: FarmDetailsModel = Field(default_factory=FarmDetailsModel)
-    products: Optional[List[ProductModel]] = None
-    logistics: LogisticsModel = Field(default_factory=LogisticsModel)
-    payment_terms: PaymentTermsModel = Field(default_factory=PaymentTermsModel)
-    verification: VerificationStatusModel = Field(default_factory=VerificationStatusModel)
-    communication: CommunicationModel = Field(default_factory=CommunicationModel)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: Optional[datetime] = None
+    contact_name: str
+    email: EmailStr
+    phone: str
+    address: str
+    country: str
+    region: str
+    farm_size: float
+    annual_production: float
+    farm_description: str
+    primary_crops: List[str]
+    certifications: Optional[List[str]] = []
+    export_experience: str
+    status: str
+    files: Optional[List[ProducerFileModel]] = []
+    ai_profile: Optional[str] = None
+    ai_profile_draft: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
 
-class ProfileResponse(BaseModel):
-    id: str = Field(..., alias="_id")
-    basic_info: BasicProfileBase
-    active_profile: Optional[DetailFarmerProfileModel] = None
-    draft_profile: Optional[DetailFarmerProfileModel] = None
-
-    def to_dict(self) -> dict:
-        """
-        Serialize the Pydantic model to a Python dict.
-        """
-        # Use Pydantic's dict() for conversion
-        return self.dict()
-
-
-# Example instantiation
-example_profile = DetailFarmerProfileModel(
-    farm_name="Prairie Grain Co.",
-    contact_person="John Doe",
-    description="Family-owned grain farm specializing in organic wheat and barley.",
-    contact=ContactInfoModel( 
-        website="https://prairiegrain.example.com"
-    ),
-    farm_details=FarmDetailsModel(
-        acreage=500.0,
-        practices=["organic", "no-till"],
-        planting_start=date(2025, 4, 1),
-        harvest_end=date(2025, 9, 30),
-    ),
-    products=[
-        ProductModel(
-            name="Spring Wheat",
-            category="wheat",
-            variety="Variety X",
-            quantity_available=1000.0,
-            unit="tonnes",
-            price_min=200.0,
-            price_max=220.0,
-            price_currency="CAD",
-            harvest_date=date(2025, 9, 15),
-            incoterms=["FOB"],
-            packaging_options=["bulk"],
-            min_order_quantity=50.0
-        )
-    ],
-)
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}

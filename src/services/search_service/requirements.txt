@@ -1,13 +1,17 @@
 fastapi
-uvicorn[standard]
-aio-pika
-pydantic<2.0.0
-motor
-pytest
-pytest-asyncio
-openai[datalib]<1.0.0
-pinecone
-cachetools
+pydantic
 httpx
+uvicorn[standard]
+motor
 python-dotenv
+boto3
+python-multipart
+tenacity
+openai
+requests
+email-validator
+aiohttp
+PyMuPDF
+pinecone
 
+httpx
