@@ -21,6 +21,6 @@ class Settings:
     OPENAI_EMBEDDING_MODEL: str = os.getenv("SEARCH_OPENAI_EMBEDDING_MODEL") or "text-embedding-3-small"
     OPENAI_EMBEDDING_DIMENSION: int = int(os.getenv("SEARCH_OPENAI_EMBEDDING_DIMENSION") or 1536)
     
-    # Base URL for profile service API (with prefix and root_path)
-    PROFILE_SERVICE_URL: str = os.getenv("PROFILE_SERVICE_URL", "http://profile_service:5000/profile/api")
+    # URL for the Profile service
+    PROFILE_SERVICE_URL: str = os.getenv("PROFILE_SERVICE_URL", "http://profile_service:5000")
 settings = Settings()

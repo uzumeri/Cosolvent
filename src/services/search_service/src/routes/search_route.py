@@ -1,14 +1,32 @@
 # app/api/routes.py
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Query
 from typing import List
 from pydantic import ValidationError
-from src.schema.query_schema import  SearchResponse, QueryRequest, ProducerSimilarity
+from src.schema.search_schema import  SearchResponse, QueryRequest, ProducerSimilarity, IndexRequest
 from src.services.pinecone_service import pinecone_service
 from src.services.openai_service import openai_service
-
+from src.services.index_service import index_producer
 router = APIRouter()
 
+@router.post("/index", response_model=dict)
 
+
+@router.post("/index", response_model=dict)
+async def index_producer_data(request: IndexRequest):
+    """
+    Index a producer's AI profile and metadata into Pinecone.
+    Expects JSON body with profile_id and ai_profile.
+    """
+    try:
+        result = await index_producer(request.profile_id, request.ai_profile, 
+                                      request.region, request.certifications, request.primary_crops)
+        return {"success": result.success, "message": result.message}
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while indexing: {str(e)}"
+        )
 @router.post("/search-producers", response_model=SearchResponse)
 async def search_producers(request: QueryRequest):
     """

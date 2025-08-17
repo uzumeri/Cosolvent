@@ -10,25 +10,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def index_producer(producer_id: str, db=Depends(get_mongo_service)):
+async def index_producer(producer_id: str, ai_profile_data:str, region: str, certifications: list, primary_crops: list) -> IndexResponse:
     """
     Indexes a producer's information and their AI-generated profile into Pinecone.
     Calls external functions to get producer and AI profile data.
     """
     try:
         # 1. Get producer by ID
-        from database.crud.profile_crud import get_profile
-        producer_data = await get_profile(db, producer_id)
 
-        logger.info(f"Producer Data: {producer_data}")
-        if not producer_data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Producer with ID '{producer_id}' not found via external function call."
-            )
 
         # 2. Get AI profile by user_id - Calling the provided function
-        ai_profile_data = producer_data.ai_profile
 
         logger.info(f"AI Profile Data: {ai_profile_data}")
         if not ai_profile_data:
@@ -46,9 +37,9 @@ async def index_producer(producer_id: str, db=Depends(get_mongo_service)):
         embedding_vector = openai_service.get_embedding(text_to_embed)
 
         metadata = {
-            "region": producer_data.region,
-            "certifications": producer_data.certifications,
-            "primary_crops": producer_data.primary_crops,
+            "region": region,
+            "certifications": certifications,
+            "primary_crops": primary_crops,
             "producer_id": producer_id, # Storing producer_id as metadata for filtering
 
         }

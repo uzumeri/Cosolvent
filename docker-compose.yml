@@ -176,6 +176,9 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+    ports:
+      - "5002:5002"
+      # Expose search service on port 500
       # If you truly depend on redis or mongodb in search_service, keep them; otherwise you can omit:
       # redis:
       #   condition: service_healthy

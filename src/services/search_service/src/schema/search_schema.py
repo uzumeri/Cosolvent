@@ -23,3 +23,10 @@ class QueryRequest(BaseModel):
     filter_certification: Optional[str] = None
     filter_primary_crop: Optional[str] = None
     top_k: int = Field(default=5, ge=1, le=100) # Number of results to return
+
+class IndexRequest(BaseModel):
+    profile_id: str
+    ai_profile: str
+    region:str
+    certifications: List[str] = Field(default_factory=list)
+    primary_crops: List[str] = Field(default_factory=list)

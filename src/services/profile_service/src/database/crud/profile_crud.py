@@ -112,6 +112,7 @@ async def generate_ai_profile(db, producer_id, profile_data):
     if not s3_urls:
         s3_urls = []
     # Generate AI description
+    logger.info(f"Generating AI profile for producer {producer_id} with files: {s3_urls}")
     ai_description = generate_producer_description_with_ai(s3_urls, profile_data, content)
 
     if not ai_description:

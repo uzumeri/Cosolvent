@@ -10,17 +10,17 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY src/services/asset_service/requirements.txt .
+COPY src/services/search_service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY src/services/asset_service/ .
+COPY src/services/search_service/ .
 
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh
 
 # Expose service port
-EXPOSE 5000
+EXPOSE 5002
 
 # Entrypoint
 ENTRYPOINT ["./entrypoint.sh"]

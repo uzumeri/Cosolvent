@@ -221,10 +221,21 @@ async def approve_ai_draft(producer_id: str, db=Depends(get_mongo_service)):
     """
     if not await approve_ai_draft_crud(db, producer_id):
         raise HTTPException(status_code=404, detail="AI draft not found or could not be approved.")
+
+    # Trigger search service to index this approved producer with AI profile text
+    # Fetch updated producer including ai_profile
+    producer = await get_profile(db, producer_id)
+    search_url = f"{settings.SEARCH_SERVICE_URL}/search/api/index"
+    payload = {"profile_id": producer_id, "ai_profile": producer.ai_profile, "region": producer.region, "certifications": producer.certifications, "primary_crops": producer.primary_crops}
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(search_url, json=payload)
+        if resp.status_code != 200:
+            logger.error(f"Failed to index producer {producer_id} in search service: {resp.status_code} {resp.text}")
+    except Exception as e:
+        logger.error(f"Error calling search service index endpoint: {e}")
     return {"success": True, "message": "AI draft approved."}
 
-
-@router.post("/profiles/{producer_id}/reject-ai-draft", response_model=SuccessResponse)
 async def reject_ai_draft(producer_id: str, db=Depends(get_mongo_service)):
     """
     Rejects and deletes the current AI profile draft.
