@@ -12,14 +12,12 @@ class MongoService:
         self.client = AsyncIOMotorClient(settings.MONGO_URI, uuidRepresentation="standard")
         self.db = self.client[settings.MONGODB_NAME]
         # Collections
-        self.producer_applications = self.db["producer_applications"]
-        self.producer_files = self.db["producer_files"]
         self.producers = self.db["producers"]
         self.templates = self.db["templates"]
         logger.info("Async MongoService initialized.")
-        
-mongoSerivice = MongoService()
+
+mongoService = MongoService()
 
 def get_mongo_service():
     """Dependency callable that returns a MongoService instance."""
-    return mongoSerivice
+    return mongoService

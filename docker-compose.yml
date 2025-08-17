@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   # ─── Infrastructure ───────────────────────────────────────────────────────
 
@@ -63,7 +62,7 @@ services:
       - auth_service
       - industry_context_service
       - llm_orchestration_service
-      - profile_management_service
+      - profile_service
       - search_service
     networks:
       - app_network
@@ -88,6 +87,8 @@ services:
     environment:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - MONGO_URI=mongodb://mongodb:27017
+    ports:
+      - "5001:5001"  # Expose asset service on port 5001
     depends_on:
       - redis
       - rabbitmq
@@ -153,15 +154,16 @@ services:
     networks:
       - app_network
 
-  profile_management_service:
+  profile_service:
     build:
       context: .
-      dockerfile: src/services/profile_management_service/Dockerfile
+      dockerfile: src/services/profile_service/Dockerfile
     depends_on:
       - redis
       - rabbitmq
       - mongodb
-      - s3-server
+    ports:
+      - "5000:5000"  # Expose profile service on port 500
     env_file:
       - .env
     networks:
