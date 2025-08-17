@@ -15,6 +15,7 @@ class PROFILECRUD:
             return profiles
         except Exception as e:
             return f"error occurred while getting all profiles....({e})"
+    
     @staticmethod
     async def create_profile(profile_data: dict) -> Optional[dict]:
         """
@@ -50,6 +51,7 @@ class PROFILECRUD:
             return profile
         except Exception as e:
             return f"can not find profile by the user id of {user_id} .... ({e})"
+    
     @staticmethod
     async def get_by_id(profile_id: str) -> Optional[dict]:
         try:
@@ -61,6 +63,51 @@ class PROFILECRUD:
             return profile
         except Exception as e:
             return f"can not find profile by the profile id of {profile_id} .... ({e})"
+    
+    @staticmethod
+    async def update_profile(user_id: str, profile_update: dict) -> Optional[dict]:
+        try:
+            profile = await db.profiles.find_one({"basic_info.user_id": user_id})
+            if not profile:
+                return None
+            
+            # Update the active profile
+            await db.profiles.update_one(
+                {"_id": profile["_id"]},
+                {"$set": {"active_profile": profile_update}}
+            )
+            profile = await db.profiles.find_one({"basic_info.user_id": user_id})
+            profile["_id"] = str(profile["_id"])
+            return profile
+        except Exception as e:
+            return f"error occurred while updating profile ...... ({e})"
+    
+    @staticmethod
+    async def update_draft_profile(user_id: str, draft_profile: dict) -> Optional[dict]:
+        try:
+            profile = await db.profiles.find_one({"basic_info.user_id": user_id})
+            if not profile:
+                return None
+            
+            # Update the draft profile
+            await db.profiles.update_one(
+                {"_id": profile["_id"]},
+                {"$set": {"draft_profile": draft_profile}}
+            )
+            profile = await db.profiles.find_one({"basic_info.user_id": user_id})
+            profile["_id"] = str(profile["_id"])
+            return profile
+        except Exception as e:
+            return f"error occurred while updating draft profile ...... ({e})"
+    
+    @staticmethod
+    async def delete_profile(user_id: str) -> Optional[bool]:
+        try:
+            result = await db.profiles.delete_one({"basic_info.user_id": user_id})
+            return result.deleted_count > 0
+        except Exception as e:
+            return f"error occurred while deleting profile ...... ({e})"
+    
     @staticmethod
     async def approve_profile(user_id: str) -> Optional[dict]:
         try:

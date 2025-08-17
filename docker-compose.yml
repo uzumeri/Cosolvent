@@ -63,12 +63,8 @@ services:
       - auth_service
       - industry_context_service
       - llm_orchestration_service
-      - metadata_service
-      - profile_generation_service
       - profile_management_service
       - search_service
-      - translation_service
-      - user_management_service
     networks:
       - app_network
 
@@ -157,36 +153,6 @@ services:
     networks:
       - app_network
 
-  metadata_service:
-    build:
-      context: .
-      dockerfile: src/services/metadata_service/Dockerfile
-    environment:
-      - MONGO_URI=mongodb://mongodb:27017
-    env_file:
-      - .env
-    depends_on:
-      - redis
-      - rabbitmq
-      - mongodb
-    networks:
-      - app_network
-
-  profile_generation_service:
-    build:
-      context: .
-      dockerfile: src/services/profile_generation_service/Dockerfile
-    environment:
-      - MONGO_URI=mongodb://mongodb:27017
-    env_file:
-      - .env
-    depends_on:
-      - redis
-      - rabbitmq
-      - mongodb
-    networks:
-      - app_network
-
   profile_management_service:
     build:
       context: .
@@ -223,28 +189,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  translation_service:
-    build:
-      context: .
-      dockerfile: src/services/translation_service/Dockerfile
-    depends_on:
-      - redis
-      - rabbitmq
-      - mongodb
-    networks:
-      - app_network
-
-  user_management_service:
-    build:
-      context: .
-      dockerfile: src/services/user_management_service/Dockerfile
-    depends_on:
-      - redis
-      - rabbitmq
-      - mongodb
-    networks:
-      - app_network
 
   s3-server:
     image: minio/minio:latest
