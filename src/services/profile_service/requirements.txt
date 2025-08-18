@@ -13,5 +13,5 @@ email-validator
 aiohttp
 PyMuPDF
 pinecone
-
+resend
 httpx

@@ -1,7 +1,6 @@
 # profile_model.py
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
-from uuid import UUID
 from datetime import datetime
 from bson import ObjectId
 from .producer_file_model import ProducerFileModel

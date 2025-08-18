@@ -1,18 +1,26 @@
-from pydantic_settings import BaseSettings
-from pydantic import Field, AnyHttpUrl
+import os
+from dotenv import load_dotenv
 
-class Settings(BaseSettings):
-    RABBITMQ_URL: str = Field(..., env="RABBITMQ_URL")
-    PINECONE_API_KEY: str = Field(..., env="PINECONE_API_KEY")
-    PINECONE_INDEX_HOST: str = Field(..., env="PINECONE_INDEX_HOST")
-    PINECONE_INDEX_NAME: str = Field(..., env="PINECONE_INDEX_NAME")
-    OPENAI_API_KEY: str = Field(..., env="OPENAI_API_KEY")
-    CACHE_TTL: int = Field(300, env="CACHE_TTL")
-    PROFILE_SERVICE_URL: AnyHttpUrl = Field(..., env="PROFILE_SERVICE_URL")
+load_dotenv()
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        extra = "ignore"
+class Settings:
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
+    MONGO_URI: str = os.getenv("MONGODB_URI")
+    MONGODB_NAME: str = os.getenv("MONGODB_NAME")
+    S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME")
+    AWS_ACCESS_KEY_ID: str = os.getenv("S3_AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY: str = os.getenv("S3_AWS_SECRET_ACCESS_KEY")
+    AWS_REGION: str = os.getenv("AWS_REGION")
 
+    # Pinecone settings
+    PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY")
+    PINECONE_ENVIRONMENT: str = os.getenv("PINECONE_ENVIRONMENT")
+    PINECONE_INDEX_NAME: str = os.getenv("SEARCH_PINECONE_INDEX_NAME")
+
+    # Embedding model and dimension
+    OPENAI_EMBEDDING_MODEL: str = os.getenv("SEARCH_OPENAI_EMBEDDING_MODEL") or "text-embedding-3-small"
+    OPENAI_EMBEDDING_DIMENSION: int = int(os.getenv("SEARCH_OPENAI_EMBEDDING_DIMENSION") or 1536)
+    
+    # URL for the Profile service
+    PROFILE_SERVICE_URL: str = os.getenv("PROFILE_SERVICE_URL", "http://profile_service:5000")
 settings = Settings()

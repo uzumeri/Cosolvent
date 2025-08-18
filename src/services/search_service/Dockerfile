@@ -1,26 +1,26 @@
 FROM python:3.11-slim
+# Environment
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="/app"
 
 WORKDIR /app
 
-# Install service dependencies
-COPY src/services/search_service/requirements.txt ./
+# Install system dependencies (ntpdate)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ntpsec-ntpdate && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY src/services/search_service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy shared code
-COPY src/shared ./src/shared
+# Copy application code
+COPY src/services/search_service/ .
 
-# Copy application source code
-COPY src/services/search_service/src ./src
-COPY src/services/search_service/entrypoint.sh ./
-
-# Ensure entrypoint is executable
+# Make entrypoint executable
 RUN chmod +x entrypoint.sh
 
-# Set Python path
-ENV PYTHONPATH=/app/src
+# Expose service port
+EXPOSE 5002
 
-# Expose FastAPI port
-EXPOSE 8000
-
-# Launch via entrypoint
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Entrypoint
+ENTRYPOINT ["./entrypoint.sh"]
