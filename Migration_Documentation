@@ -128,6 +128,7 @@ The backend now consists of **two main Python FastAPI microservices**:
 1. **Start Services**
    ```sh
    docker-compose up --build
+   ```
 2. **API Access**
    - Asset Service: [http://localhost:8002/docs](http://localhost:8002/docs) (Swagger UI)  
    - Profile Management Service: [http://localhost:8003/docs](http://localhost:8003/docs)  
