@@ -19,4 +19,4 @@ Python FastAPI service providing search and matching over profiles and assets.
 ## Notes
 - Utilities under `utils/` include Uploader and analyzers. Add endpoint smoke tests as you introduce routes.
 
-Prev: Asset Service (./asset_service.md) | Next: Reverse Proxy (./reverse_proxy.md)
+[Prev: Asset Service](./asset_service.md) | [Next: Reverse Proxy](./reverse_proxy.md)

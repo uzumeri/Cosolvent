@@ -16,4 +16,4 @@ How Cosolvent helps:
 
 Adopt the provided schemas and services, extend where needed, and integrate your custom ranking/scoring to fit vertical needs.
 
-Prev: Contents (./README.md) | Next: Architecture (./architecture.md)
+[Prev: Contents](./README.md) | [Next: Architecture](./architecture.md)

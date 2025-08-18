@@ -22,4 +22,4 @@ Python FastAPI service offering LLM-adjacent utilities (e.g., metadata extractio
 ## Tests
 - Pytest examples in `tests/` show how to stub LLM calls and validate endpoints.
 
-Prev: Industry Context Service (./industry_context_service.md) | Next: Profile Service (./profile_service.md)
+[Prev: Industry Context Service](./industry_context_service.md) | [Next: Profile Service](./profile_service.md)

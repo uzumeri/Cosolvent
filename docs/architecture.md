@@ -28,4 +28,4 @@ See `docker-compose.yml` for ports, dependencies, and health checks. For diagram
 
 Keep schema names consistent across services to enable reliable, composable matching.
 
-Prev: Use Cases (./use-cases.md) | Next: Data Models (./models.md)
+[Prev: Use Cases](./use-cases.md) | [Next: Data Models](./models.md)

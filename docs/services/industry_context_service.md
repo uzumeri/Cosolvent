@@ -24,4 +24,4 @@ TypeScript service with HTTP server (Hono) and background workers to ingest, tra
 ## Notes
 - See `src/workers/` for job definitions and `src/app.ts` / `src/server.ts` for routes.
 
-Prev: Auth Service (./auth_service.md) | Next: LLM Orchestration Service (./llm_orchestration_service.md)
+[Prev: Auth Service](./auth_service.md) | [Next: LLM Orchestration Service](./llm_orchestration_service.md)

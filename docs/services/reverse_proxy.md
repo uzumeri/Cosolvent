@@ -12,4 +12,4 @@ Nginx-based reverse proxy that routes HTTP requests to individual microservices.
 - See `src/services/reverse_proxy/nginx.conf` for route definitions.
 - Update when adding or renaming services to keep paths consistent.
 
-Prev: Search Service (./search_service.md) | Next: Frontend (../frontend.md)
+[Prev: Search Service](./search_service.md) | [Next: Frontend](../frontend.md)

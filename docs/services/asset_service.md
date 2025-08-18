@@ -19,4 +19,4 @@ Python FastAPI service handling asset ingestion, processing, and storage to MinI
 ## Notes
 - Utilities under `utils/` include S3 uploader, file handling, and analyzers.
 
-Prev: Profile Service (./profile_service.md) | Next: Search Service (./search_service.md)
+[Prev: Profile Service](./profile_service.md) | [Next: Search Service](./search_service.md)

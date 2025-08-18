@@ -21,4 +21,4 @@ Cosolvent standardizes market entities using Pydantic (Python) and Zod (TypeScri
 - Version your models as they evolve (e.g., `v1` namespaces) to avoid breaking consumers.
 - Provide example payloads in service docs and tests; add validators for required business invariants.
 
-Prev: Architecture (./architecture.md) | Next: Services Overview (./services/README.md)
+[Prev: Architecture](./architecture.md) | [Next: Services Overview](./services/README.md)

@@ -19,4 +19,4 @@ Python FastAPI service for participant profiles and templates.
 - Middleware allows CORS for local development.
 - Extend Pydantic models to include domain-specific fields and maintain schema consistency with other services.
 
-Prev: LLM Orchestration Service (./llm_orchestration_service.md) | Next: Asset Service (./asset_service.md)
+[Prev: LLM Orchestration Service](./llm_orchestration_service.md) | [Next: Asset Service](./asset_service.md)

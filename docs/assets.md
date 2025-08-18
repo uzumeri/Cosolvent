@@ -10,4 +10,4 @@ Links to design documents and templates included in the repo.
   - ./Farmer Profile Sturcture/Farming Business (Company) Profile Template.pdf
   - ./Farmer Profile Sturcture/Individual Farmer Profile Template.pdf
 
-Prev: Frontend (./frontend.md) | Next: Contents (./README.md)
+[Prev: Frontend](./frontend.md) | [Next: Contents](./README.md)

@@ -23,4 +23,4 @@ TypeScript service built with Hono to provide authentication and session primiti
 ## Notes
 - Exposes auth endpoints for the frontend and other services. Review `src/app.ts` and `src/server.ts` for route mounting and middleware.
 
-Prev: Services Overview (./README.md) | Next: Industry Context Service (./industry_context_service.md)
+[Prev: Services Overview](./README.md) | [Next: Industry Context Service](./industry_context_service.md)

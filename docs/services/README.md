@@ -12,4 +12,4 @@ This section lists Cosolvent’s microservices and their roles.
 - Search Service — ./search_service.md
 - Reverse Proxy — ./reverse_proxy.md
 
-Prev: Data Models (../models.md) | Next: Auth Service (./auth_service.md)
+[Prev: Data Models](../models.md) | [Next: Auth Service](./auth_service.md)
