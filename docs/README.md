@@ -1,9 +1,22 @@
 # Cosolvent Documentation
 
-This folder contains in-depth documentation for the Cosolvent matching engine.
+Welcome to the documentation for Cosolvent — an MIT-licensed matching engine to help thicken thin markets.
 
-- Architecture overview: architecture.md
-- Microservice guides: services/
-- Use cases: use-cases.md
+Use the contents below to navigate. Each page includes Prev/Next links.
 
-For high-level context, start with the project README at the repository root.
+## Contents
+1. Overview & Use Cases — ./use-cases.md
+2. Architecture — ./architecture.md
+3. Data Models — ./models.md
+4. Services Overview — ./services/README.md
+   - Auth Service — ./services/auth_service.md
+   - Industry Context Service — ./services/industry_context_service.md
+   - LLM Orchestration Service — ./services/llm_orchestration_service.md
+   - Profile Service — ./services/profile_service.md
+   - Asset Service — ./services/asset_service.md
+   - Search Service — ./services/search_service.md
+   - Reverse Proxy — ./services/reverse_proxy.md
+5. Frontend — ./frontend.md
+6. Assets & Diagrams — ./assets.md
+
+Next ➜ Overview & Use Cases (./use-cases.md)

@@ -1,5 +1,7 @@
 # Architecture Overview
 
+[← Contents](./README.md)
+
 Cosolvent is a polyglot microservice system orchestrated via Docker Compose. It ships batteries-included infrastructure to enable local development and deployment.
 
 ## Components
@@ -18,10 +20,12 @@ Cosolvent is a polyglot microservice system orchestrated via Docker Compose. It 
 - RabbitMQ: event and task distribution where required.
 - MinIO: S3-compatible object storage for asset files.
 
-See `docker-compose.yml` for ports, dependencies, and health checks.
+See `docker-compose.yml` for ports, dependencies, and health checks. For diagrams and design PDFs, see Assets & Diagrams (./assets.md).
 
 ## Data & Models
 - Python services: Pydantic models for DTOs and validation.
 - TypeScript services: Zod schemas for validation and runtime type-safety.
 
 Keep schema names consistent across services to enable reliable, composable matching.
+
+Prev: Use Cases (./use-cases.md) | Next: Data Models (./models.md)
