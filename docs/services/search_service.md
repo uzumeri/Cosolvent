@@ -1,5 +1,7 @@
 # Search Service
 
+[← Services](./README.md) | [← Contents](../README.md)
+
 Python FastAPI service providing search and matching over profiles and assets.
 
 ## Responsibilities
@@ -16,3 +18,5 @@ Python FastAPI service providing search and matching over profiles and assets.
 
 ## Notes
 - Utilities under `utils/` include Uploader and analyzers. Add endpoint smoke tests as you introduce routes.
+
+Prev: Asset Service (./asset_service.md) | Next: Reverse Proxy (./reverse_proxy.md)

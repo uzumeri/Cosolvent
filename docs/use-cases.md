@@ -1,5 +1,7 @@
 # Use Cases
 
+[← Contents](./README.md)
+
 Cosolvent focuses on “thin” markets where discovery and matching are difficult due to sparse supply/demand, specialization, or fragmentation. Examples include:
 
 - Niche B2B marketplaces: specialized manufacturing capabilities, lab services, or compliance auditors.
@@ -13,3 +15,5 @@ How Cosolvent helps:
 - Provides search and job pipelines to surface relevant matches quickly.
 
 Adopt the provided schemas and services, extend where needed, and integrate your custom ranking/scoring to fit vertical needs.
+
+Prev: Contents (./README.md) | Next: Architecture (./architecture.md)

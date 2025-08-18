@@ -1,5 +1,7 @@
 # Frontend
 
+[← Contents](./README.md)
+
 Next.js app for user onboarding, browsing, and match workflows.
 
 ## Commands (run in `frontend/`)
@@ -13,3 +15,5 @@ Next.js app for user onboarding, browsing, and match workflows.
 
 ## Notes
 - Uses React 19, Next 15, and Biome. Place shared libs in `lib/`, providers in `providers/`, and UI in `components/`.
+
+Prev: Reverse Proxy (./services/reverse_proxy.md) | Next: Assets & Diagrams (./assets.md)

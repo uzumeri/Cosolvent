@@ -1,5 +1,7 @@
 # LLM Orchestration Service
 
+[← Services](./README.md) | [← Contents](../README.md)
+
 Python FastAPI service offering LLM-adjacent utilities (e.g., metadata extraction) with configuration persisted in MongoDB.
 
 ## Responsibilities
@@ -19,3 +21,5 @@ Python FastAPI service offering LLM-adjacent utilities (e.g., metadata extractio
 
 ## Tests
 - Pytest examples in `tests/` show how to stub LLM calls and validate endpoints.
+
+Prev: Industry Context Service (./industry_context_service.md) | Next: Profile Service (./profile_service.md)

@@ -1,5 +1,7 @@
 # Profile Service
 
+[← Services](./README.md) | [← Contents](../README.md)
+
 Python FastAPI service for participant profiles and templates.
 
 ## Responsibilities
@@ -16,3 +18,5 @@ Python FastAPI service for participant profiles and templates.
 ## Notes
 - Middleware allows CORS for local development.
 - Extend Pydantic models to include domain-specific fields and maintain schema consistency with other services.
+
+Prev: LLM Orchestration Service (./llm_orchestration_service.md) | Next: Asset Service (./asset_service.md)

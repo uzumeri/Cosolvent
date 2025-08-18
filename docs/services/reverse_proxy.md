@@ -1,5 +1,7 @@
 # Reverse Proxy
 
+[← Services](./README.md) | [← Contents](../README.md)
+
 Nginx-based reverse proxy that routes HTTP requests to individual microservices.
 
 ## Responsibilities
@@ -9,3 +11,5 @@ Nginx-based reverse proxy that routes HTTP requests to individual microservices.
 ## Configuration
 - See `src/services/reverse_proxy/nginx.conf` for route definitions.
 - Update when adding or renaming services to keep paths consistent.
+
+Prev: Search Service (./search_service.md) | Next: Frontend (../frontend.md)
