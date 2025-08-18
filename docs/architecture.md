@@ -18,7 +18,7 @@ Cosolvent is a polyglot microservice system orchestrated via Docker Compose. It 
 - RabbitMQ: event and task distribution where required.
 - MinIO: S3-compatible object storage for asset files.
 
-See `docker-compose.yml` for ports, dependencies, and health checks. Existing design diagrams live in this folder (Cosolvent System Design.pdf/png).
+See `docker-compose.yml` for ports, dependencies, and health checks.
 
 ## Data & Models
 - Python services: Pydantic models for DTOs and validation.
