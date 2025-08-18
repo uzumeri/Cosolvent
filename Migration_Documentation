@@ -1,0 +1,189 @@
+# Microservices Consolidation & Migration Guide
+
+## Background
+
+This repository initially adopted a classic microservices architecture, maintaining distinct services for:
+- Asset management
+- Metadata extraction
+- Profile generation
+- Profile management
+- Translation
+- User management
+
+Over time, as the product matured and operational complexity grew, the need arose to consolidate overlapping services, reduce duplication, and streamline deployment and maintenance.
+
+This document details:
+- **How the services were merged**
+- **What code/components were removed**
+- **The current state of the backend architecture**
+- **How to interact with and extend the system**
+
+---
+
+## Summary of the Migration
+
+### What Was Merged & What Changed
+
+#### Services Removed:
+- **metadata_service**
+- **profile_generation_service**
+- **translation_service**
+- **user_management_service**
+
+All code, Dockerfiles, tests, and routing related to the above services were deleted from the repository (see PR #178 for full file diffs).
+
+#### Services Consolidated:
+- **asset_service** now handles:
+  - Asset upload, download, and metadata extraction (previously in metadata_service)
+  - Asset translation (previously in translation_service)
+- **profile_management_service** now handles:
+  - Profile CRUD
+  - Profile generation (previously in profile_generation_service)
+  - Profile approval/rejection and event publishing
+
+#### API Gateway / Reverse Proxy:
+- All proxy routes for removed services have been eliminated from `nginx.conf`.
+- Only the active, consolidated services are routed.
+
+#### Database Schemas & CRUD:
+- Models and CRUD classes for metadata, profile generation, and translation were integrated into the surviving services (`asset_service` and `profile_management_service`).
+- Utility and event publisher scripts were also merged and deduplicated.
+
+#### Docker Compose:
+- All removed services have been eliminated from `docker-compose.yml`.
+- Only active services remain, and dependencies have been updated.
+
+---
+
+## Current Architecture
+
+The backend now consists of **two main Python FastAPI microservices**:
+
+### 1. `asset_service`
+**Responsibilities**:
+- Asset upload/download (with S3 support)
+- Metadata extraction (previously metadata_service)
+- Asset translation (previously translation_service)
+- Asset CRUD (create, update, delete)
+- Event publishing on asset upload/completion
+
+**Key Endpoints**:
+- `POST /assets`: Upload asset  
+- `GET /assets`: List/query assets  
+- `PUT /assets/{asset_id}`: Update asset metadata  
+- `DELETE /assets/{asset_id}`: Delete asset  
+- `POST /assets/{asset_id}/metadata`: Extract metadata (LLM integration)  
+- `GET /assets/{asset_id}/metadata`: Retrieve asset metadata  
+- `POST /assets/{asset_id}/translate`: Translate asset  
+- `GET /assets/{asset_id}/translations`: List translations  
+
+**Code location**: `src/services/asset_service/`
+
+---
+
+### 2. `profile_management_service`
+**Responsibilities**:
+- Profile CRUD (create, read, update, delete)
+- Profile generation (previously profile_generation_service)
+- Draft/active profile updates
+- Approve/reject workflow
+- Profile event publishing
+
+**Key Endpoints**:
+- `POST /profiles/`: Create profile  
+- `GET /profiles/{profile_id}`: Get by profile ID  
+- `GET /profiles/profile_with_user_id/{user_id}`: Get by user ID  
+- `PUT /profiles/{user_id}`: Update active profile  
+- `PUT /profiles/{user_id}/draft`: Update draft profile  
+- `DELETE /profiles/{user_id}`: Delete profile  
+- `PUT /profiles/{user_id}/approve`: Approve profile  
+- `PUT /profiles/{user_id}/reject`: Reject profile  
+- `POST /profiles/{user_id}/generate`: Generate profile using LLM (from metadata)  
+- `POST /profiles/{user_id}/generate-from-asset/{asset_id}`: Generate profile based on asset metadata  
+
+**Code location**: `src/services/profile_management_service/`
+
+---
+
+### Supporting Infrastructure
+
+- **RabbitMQ**: Used for event/message passing between services.  
+- **MongoDB**: Used as the primary database for assets and profiles.  
+- **Minio**: S3-compatible storage for asset uploads.  
+
+---
+
+## Migration Rationale
+
+- **Reduced duplication**: Metadata extraction, translation, and profile generation were tightly coupled to asset/profile flows. Merging reduced redundant code and API surface area.  
+- **Simpler deployments**: Fewer services to deploy, manage, and monitor.  
+- **Clearer ownership**: All asset-related logic is now in one place; all profile-related logic is consolidated.  
+
+---
+
+## How to Use the System
+
+### Local Development
+
+1. **Start Services**
+   ```sh
+   docker-compose up --build
+   ```
+2. **API Access**
+   - Asset Service: [http://localhost:8002/docs](http://localhost:8002/docs) (Swagger UI)  
+   - Profile Management Service: [http://localhost:8003/docs](http://localhost:8003/docs)  
+
+3. **Reverse Proxy**
+   - All backend endpoints are accessible via **NGINX (port 80)**.  
+   - Example Routes:  
+     - `/assets/` → asset_service  
+     - `/profiles/` → profile_management_service  
+
+---
+
+### Extending the System
+
+- Add new asset endpoints in:  
+  `src/services/asset_service/src/routes/asset_service.py`  
+
+- Add new profile management endpoints in:  
+  `src/services/profile_management_service/src/routes/profile_management_service.py`  
+
+- Event-driven flows (RabbitMQ consumers) are located in each service’s `utils/` directory.  
+- Models and CRUD classes are located in each service’s `database/` subdirectory.  
+
+---
+
+### Evolution Summary
+
+| Area               | Before                             | After (Now)                             |
+|--------------------|------------------------------------|------------------------------------------|
+| Asset Management   | asset_service + metadata_service   | asset_service (all-in-one)               |
+| Profile Management | profile_management + profile_gen   | profile_management_service (all-in-one)  |
+| Translation        | translation_service                | asset_service                            |
+| User Management    | user_management_service            | (removed; assumed part of profile mgmt)  |
+| Event Publishing   | Distributed                        | Centralized per service                  |
+| Deployment         | 6+ microservices                   | 2 core backend services                  |
+
+---
+
+### FAQ
+
+**Q: Can I still run metadata extraction or translation as a separate service?**  
+A: No. These functionalities are now integrated into `asset_service` for lower latency and easier integration.  
+
+**Q: Where do I add new LLM-based profile generation logic?**  
+A: In `src/services/profile_management_service/src/utils/mock_profile_generation_llm.py` and associated route/controller logic.  
+
+**Q: How do I publish or consume events?**  
+A: Use the publisher/consumer utilities in each service’s `utils/` directory. RabbitMQ is the event bus.  
+
+---
+
+### TL;DR
+
+**All asset-related logic is now in `asset_service`. All profile-related logic (including LLM generation) is now in `profile_management_service`. Superfluous microservices were removed. See this doc and each service’s `/docs` for details.**
+
+---
+
+For further context, refer to [PR #178](https://github.com/DeeperPoint/Cosolvent/pull/178/files) for the full migration diff.
