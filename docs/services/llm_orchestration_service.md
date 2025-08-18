@@ -13,7 +13,7 @@ Python FastAPI service offering LLM-adjacent utilities (e.g., metadata extractio
 - `POST /llm/metadata` — extract textual metadata from uploaded file (see tests for usage).
 
 ## Commands (run in `src/services/llm_orchestration_service`)
-- Local: `uvicorn src.main:app --reload`
+- Local: `uvicorn src.main:app --reload --port 8000`
 - Docker: brought up via `docker compose up`.
 
 ## Configuration
