@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings:
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY")
     MONGO_URI: str = os.getenv("MONGODB_URI")
     MONGODB_NAME: str = os.getenv("MONGODB_NAME")
     S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME")
@@ -17,9 +17,8 @@ class Settings:
     PINECONE_ENVIRONMENT: str = os.getenv("PINECONE_ENVIRONMENT")
     PINECONE_INDEX_NAME: str = os.getenv("SEARCH_PINECONE_INDEX_NAME")
 
-    # Embedding model and dimension
-    OPENAI_EMBEDDING_MODEL: str = os.getenv("SEARCH_OPENAI_EMBEDDING_MODEL") or "text-embedding-3-small"
-    OPENAI_EMBEDDING_DIMENSION: int = int(os.getenv("SEARCH_OPENAI_EMBEDDING_DIMENSION") or 1536)
+    # Embedding dimension (embeddings are produced by orchestration service)
+    EMBEDDING_DIMENSION: int = int(os.getenv("EMBEDDING_DIMENSION") or 1536)
     
     # URL for the Profile service
     PROFILE_SERVICE_URL: str = os.getenv("PROFILE_SERVICE_URL", "http://profile_service:5000")

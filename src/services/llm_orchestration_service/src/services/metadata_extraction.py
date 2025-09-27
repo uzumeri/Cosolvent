@@ -17,23 +17,22 @@ async def image_to_text(file_content: bytes, provider_config: ProviderConfig, ll
     # For now, this is a placeholder.
     # Example: return await llm_client.call_model(prompt="Describe this image.", image_bytes=file_content)
     # This depends heavily on the capabilities of the chosen llm_client and provider_config.
-    if "openai" in provider_config.name.lower() and provider_config.model in ["gpt-4-vision-preview", "gpt-4o"]:
-        # This is a conceptual example; actual OpenAI API call for vision would be different.
-        # You'd typically send the image data (e.g., base64 encoded) as part of the message content.
-        # The `call_model` would need to be adapted to handle multimodal inputs.
+    if provider_config.model:
+        # This is a conceptual example; actual VLM call would encode image bytes in the message content.
+        # The `call_model` is already able to handle multimodal inputs for compatible providers.
         # For now, we simulate this by returning a descriptive string.
-        logger.warning("Image-to-text for OpenAI vision models is conceptual here. Actual implementation needed.")
+        logger.warning("Image-to-text placeholder used. Implement a proper VLM call if needed.")
         return "[Placeholder: Textual description of an image that was processed by a vision model]"
     return "[Placeholder image content as text: a cat sitting on a mat]"
 
 # Placeholder for a function that would convert audio/video to text (Speech-to-Text)
 async def speech_to_text(file_content: bytes, provider_config: ProviderConfig, llm_client) -> str:
     logger.info("Attempting to convert speech to text (placeholder).")
-    # Use a specific STT model/service (e.g., OpenAI Whisper, Google Speech-to-Text)
+    # Use a specific STT model/service if available (e.g., Whisper via another provider)
     # Example: return await llm_client.call_stt_model(audio_bytes=file_content)
     # This also depends on the llm_client supporting such calls or using a separate client.
-    if "openai" in provider_config.name.lower(): # Assuming Whisper access via OpenAI client or similar
-        logger.warning("Speech-to-text for OpenAI (e.g., Whisper) is conceptual. Actual implementation needed.")
+    if provider_config.model:
+        logger.warning("Speech-to-text placeholder used. Implement a proper STT call if needed.")
         return "[Placeholder: Transcribed text from an audio/video file using a speech-to-text model like Whisper]"
     return "[Placeholder audio content as text: Hello world, this is a test.]"
 

@@ -98,6 +98,11 @@ services:
       - .env
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   auth_service:
     build:
@@ -110,6 +115,8 @@ services:
     env_file:
       - .env
       - ./src/services/auth_service/.env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
 
   industry_context_service:
     build:
@@ -121,6 +128,9 @@ services:
     env_file:
       - .env
       - ./src/services/industry_context_service/.env
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - MONGODB_URI=mongodb://mongodb:27017
     networks:
       - app_network
     volumes:
@@ -136,6 +146,9 @@ services:
     env_file:
       - .env
       - ./src/services/industry_context_service/.env
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - MONGODB_URI=mongodb://mongodb:27017
     networks:
       - app_network
     volumes:
@@ -149,6 +162,8 @@ services:
       - mongodb_uri=mongodb://mongodb:27017
       - mongodb_db=administration
       - mongodb_collection=config
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - EMBEDDINGS_MODE=${EMBEDDINGS_MODE:-fallback}
     depends_on:
       - mongodb
     networks:
@@ -166,8 +181,17 @@ services:
       - "5000:5000"  # Expose profile service on port 500
     env_file:
       - .env
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - ASSET_SERVICE_URL=http://asset_service:5001/asset
+      - MONGODB_URI=mongodb://mongodb:27017
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   search_service:
     build:
@@ -189,8 +213,10 @@ services:
     env_file:
       - .env
       - src/services/search_service/.env
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8009/healthz || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5002/healthz || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

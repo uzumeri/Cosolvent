@@ -3,7 +3,7 @@ from pydantic import ValidationError
 from src.database.db import get_mongo_service
 from src.database.models.search_model import IndexResponse
 from src.services.pinecone_service import pinecone_service
-from src.services.openai_service import openai_service
+from src.services.embedding_service import embedding_service
 import logging
 
 
@@ -30,11 +30,10 @@ async def index_producer(producer_id: str, ai_profile_data:str, region: str, cer
 
         # Combine relevant text for vectorization
         text_to_embed = (
-            
             f"AI Profile: {ai_profile_data}"
         )
 
-        embedding_vector = openai_service.get_embedding(text_to_embed)
+        embedding_vector = embedding_service.get_embedding(text_to_embed)
 
         metadata = {
             "region": region,

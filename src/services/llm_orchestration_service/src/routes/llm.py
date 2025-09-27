@@ -5,8 +5,10 @@ from typing import Dict, Any, List
 
 from .. import services
 from ..core.exceptions import LLMOrchestrationException, ConfigurationException
+from tenacity import RetryError
 from ..core.logging import get_logger
-from ..config.store import get_config, update_config, AppConfig # Import AppConfig for request/response model
+from ..config.store import get_config, update_config
+from ..config.models import AppConfig  # Import AppConfig for request/response model
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -32,6 +34,10 @@ class LLMServiceResponse(BaseModel):
 
 class ProfileResponse(BaseModel):
     profile: Dict[str, Any]
+
+class EmbeddingRequest(BaseModel):
+    text: str
+    service_name: str = "embeddings"
 
 # --- Endpoints ---
 
@@ -78,6 +84,35 @@ async def llm_call_endpoint(req: LLMCallRequest):
     except Exception as e:
         logger.exception(f"Unexpected error in /call for service '{req.service_name}'")
         raise HTTPException(status_code=500, detail="An unexpected error occurred.")
+
+@router.post("/embeddings", response_model=LLMServiceResponse)
+async def embeddings_endpoint(req: EmbeddingRequest):
+    logger.info(f"POST /embeddings for service: {req.service_name}, text: '{req.text[:50]}...'")
+    try:
+        vector = await services.create_embedding(text=req.text, service_name=req.service_name)
+        return LLMServiceResponse(result=vector)
+    except ConfigurationException as e:
+        logger.error(f"Configuration error in /embeddings for service '{req.service_name}': {e}")
+        raise HTTPException(status_code=400, detail=f"Configuration error: {e}")
+    except LLMOrchestrationException as e:
+        # Map upstream provider issues to 502 for clearer diagnostics to callers
+        logger.error(f"LLM Orchestration error in /embeddings for service '{req.service_name}': {e}")
+        raise HTTPException(status_code=502, detail=str(e))
+    except RetryError as e:
+        # Unwrap retry error to show original provider message
+        cause = e.last_attempt.exception() if hasattr(e, 'last_attempt') else e
+        logger.error(f"Retry exhausted in /embeddings for service '{req.service_name}': {cause}")
+        raise HTTPException(status_code=502, detail=f"Embeddings upstream retry exhausted: {cause}")
+    except Exception as e:
+        try:
+            from tenacity import RetryError as _RE
+            if isinstance(e, _RE) and hasattr(e, 'last_attempt'):
+                cause = e.last_attempt.exception()
+                raise HTTPException(status_code=502, detail=f"Embeddings upstream retry exhausted: {cause}")
+        except Exception:
+            pass
+        msg = str(e)
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {msg[:300]}")
 
 @router.post("/translate", response_model=LLMServiceResponse)
 async def translate_endpoint(req: TranslateRequest):

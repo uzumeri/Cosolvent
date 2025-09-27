@@ -5,13 +5,13 @@ uvicorn[standard]>=0.20.0 # ASGI server for FastAPI (standard includes websocket
 pydantic>=2.0.0 # Data validation and settings management
 
 # LLM Provider Libraries (add specific ones you use)
-openai>=1.30.1       # Ensure a recent version for vision/audio features
 # google-cloud-aiplatform # For Google Vertex AI
 # huggingface_hub     # For Hugging Face Inference API
 # transformers        # For local Hugging Face models (if used)
 
 # Utility Libraries
 tenacity>=8.0.0     # For retries
+httpx>=0.27.0       # HTTP client for providers
 motor
 pydantic-settings
 python-dotenv

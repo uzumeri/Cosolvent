@@ -20,7 +20,7 @@ const EnvSchema = z.object({
 	MONGODB_URI: z.string(),
 	MONGODB_NAME: z.string(),
 	REDIS_URL: z.string(),
-	OPENAI_API_KEY: z.string(),
+	OPENROUTER_API_KEY: z.string(),
 	PINECONE_API_KEY: z.string(),
 	PINECONE_INDEX_NAME: z.string(),
 });

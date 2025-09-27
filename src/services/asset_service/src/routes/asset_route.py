@@ -20,7 +20,10 @@ from src.schema.producer_file_schema import ProducerFileSchema
 from src.database.db import get_mongo_service
 from src.core.config import settings
 from utils.s3_uploader import upload_file_to_s3
-from utils.openai_analyzer import get_image_metadata_from_openai ,get_document_text_from_openai 
+from utils.openrouter_analyzer import (
+    get_image_metadata_from_openrouter,
+    get_document_text_from_openrouter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -111,10 +114,10 @@ async def generate_file_metadata(file_id: str, db=Depends(get_mongo_service)):
     try:
         if ext in ["jpeg", "jpg", "png", "gif", "bmp", "tiff"]:
             logger.info(f"Generating image metadata for file {file_id} (type {type_key})")
-            description = await get_image_metadata_from_openai(file_url)
+            description = await get_image_metadata_from_openrouter(file_url)
         elif ext == "pdf":
             logger.info(f"Generating document metadata for file {file_id} (type {type_key})")
-            description = await get_document_text_from_openai(file_url)
+            description = await get_document_text_from_openrouter(file_url)
         else:
             raise HTTPException(
                 status_code=400,

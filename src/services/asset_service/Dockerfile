@@ -20,7 +20,7 @@ COPY src/services/asset_service/ .
 RUN chmod +x entrypoint.sh
 
 # Expose service port
-EXPOSE 5000
+EXPOSE 5001
 
 # Entrypoint
 ENTRYPOINT ["./entrypoint.sh"]

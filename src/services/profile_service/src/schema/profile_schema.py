@@ -32,9 +32,38 @@ class ProducerRegisterSchema(BaseModel):
         annualProduction: float = Form(...),
         farmDescription: str = Form(...),
         exportExperience: str = Form(...),
-        primaryCrops: str = Form(...),  # send JSON string
-        certifications: str = Form(...), # send JSON string
+        primaryCrops: Optional[str] = Form(None),  # accept JSON, comma-separated, or empty
+        certifications: Optional[str] = Form(None), # accept JSON, comma-separated, or empty
     ):
+        def _parse_str_list(value: Optional[str]) -> List[str]:
+            if value is None:
+                return []
+            # Handle already-list inputs just in case
+            if isinstance(value, list):  # type: ignore[unreachable]
+                return [str(v).strip() for v in value if str(v).strip()]
+            s = value.strip()
+            if not s:
+                return []
+            # Try JSON first
+            try:
+                parsed = json.loads(s)
+                if isinstance(parsed, list):
+                    return [str(v).strip() for v in parsed if str(v).strip()]
+                if isinstance(parsed, str):
+                    s = parsed
+            except Exception:
+                # If looks like a bracketed list but JSON failed, try a gentle normalization
+                if (s.startswith('[') and s.endswith(']')):
+                    try:
+                        normalized = s.replace("'", '"')
+                        parsed = json.loads(normalized)
+                        if isinstance(parsed, list):
+                            return [str(v).strip() for v in parsed if str(v).strip()]
+                    except Exception:
+                        pass
+            # Fallback: comma-separated string
+            return [part.strip() for part in s.split(',') if part.strip()]
+
         return cls(
             farmName=farmName,
             contactName=contactName,
@@ -47,8 +76,8 @@ class ProducerRegisterSchema(BaseModel):
             annualProduction=annualProduction,
             farmDescription=farmDescription,
             exportExperience=exportExperience,
-            primaryCrops=json.loads(primaryCrops),
-            certifications=json.loads(certifications),
+            primaryCrops=_parse_str_list(primaryCrops),
+            certifications=_parse_str_list(certifications),
         )
 
 
@@ -112,7 +141,7 @@ class ProducerSchema(BaseModel):
     status: str
     ai_profile: Optional[str] = None
     ai_profile_draft: Optional[str] = None
-    files: Optional[List[ProducerFileSchema]] = []
+    files: Optional[List[ProducerFileSchema]] = Field(default_factory=list)
 
     class Config:
         from_attributes = True

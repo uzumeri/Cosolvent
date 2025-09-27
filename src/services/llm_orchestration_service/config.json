@@ -1,24 +1,24 @@
 {
   "clients": {
-    "openai": {
+    "openrouter": {
       "providers": {
-        "openai_gpt4o_vision": {
-          "name": "openai_gpt4o_vision",
-          "api_key": "OPENAI_API_KEY_PLACEHOLDER",
-          "model": "gpt-4o"
+        "openrouter_gpt5": {
+          "name": "openrouter_gpt5",
+          "api_key": "OPENROUTER_API_KEY_PLACEHOLDER",
+          "model": "openai/gpt-5"
         },
-        "openai_whisper_2": {
-          "name": "openai_whisper_2",
-          "api_key": "OPENAI_API_KEY_PLACEHOLDER",
-          "model": "whisper-1"
+        "openrouter_embedding_small": {
+          "name": "openrouter_embedding_small",
+          "api_key": "OPENROUTER_API_KEY_PLACEHOLDER",
+          "model": "openai/text-embedding-3-small"
         }
       }
     }
   },
   "services": {
     "direct_call": {
-      "client": "openai",
-      "provider": "openai_gpt4o_vision",
+      "client": "openrouter",
+      "provider": "openrouter_gpt5",
       "prompt_template_version": "v1",
       "options": {
         "prompt_template": "{text}",
@@ -28,9 +28,19 @@
         }
       }
     },
+    "embeddings": {
+      "client": "openrouter",
+      "provider": "openrouter_embedding_small",
+      "prompt_template_version": "v1",
+      "options": {
+        "llm_params": {
+          "dimensions": 1536
+        }
+      }
+    },
     "translate": {
-      "client": "openai",
-      "provider": "openai_gpt4o_vision",
+      "client": "openrouter",
+      "provider": "openrouter_gpt5",
       "prompt_template_version": "v1",
       "options": {
         "prompt_templates": {
@@ -46,14 +56,14 @@
       }
     },
     "metadata_extraction": {
-      "client": "openai",
-      "provider": "openai_gpt4o_vision",
+      "client": "openrouter",
+      "provider": "openrouter_gpt5",
       "prompt_template_version": "v1",
       "options": {
         "image_processing": {
-          "vlm_provider": "openai_gpt4o_vision",
+          "vlm_provider": "openrouter_gpt5",
           "vlm_prompt_template": "Describe this image in detail, focusing on objects, people, setting, and any discernible activities or text.",
-          "metadata_llm_provider": "openai_gpt4o_vision",
+          "metadata_llm_provider": "openrouter_gpt5",
           "metadata_llm_prompt_template": "From the following image description, extract structured metadata. The metadata should include a concise title, a short descriptive summary (2-3 sentences), a list of relevant keywords (5-10), main objects identified, and any dominant colors.\n\nImage Description:\n\"\"\"{vlm_output}\"\"\"\n\nReturn the metadata as a JSON object.",
           "vlm_params": {
             "temperature": 0.7,
@@ -66,11 +76,11 @@
           }
         },
         "audio_processing": {
-          "stt_provider": "openai_whisper_2",
+          "stt_provider": "", 
           "stt_options": {
             "response_format": "text"
           },
-          "metadata_llm_provider": "openai_gpt4o_vision",
+          "metadata_llm_provider": "openrouter_gpt5",
           "metadata_llm_prompt_template": "Based on the following audio transcript, extract structured metadata. The metadata should include a concise title for the audio content, a brief summary (2-3 sentences), a list of main topics discussed (3-5), and any identifiable speakers if discernible from the context.\n\nAudio Transcript:\n\"\"\"{stt_output}\"\"\"\n\nReturn the metadata as a JSON object.",
           "llm_params": {
             "temperature": 0.5,
@@ -79,11 +89,11 @@
           }
         },
         "video_processing": {
-          "stt_provider": "openai_whisper_2",
+          "stt_provider": "",
           "stt_options": {
             "response_format": "text" 
           },
-          "metadata_llm_provider": "openai_gpt4o_vision",
+          "metadata_llm_provider": "openrouter_gpt5",
           "metadata_llm_prompt_template": "From the transcript of this video, extract structured metadata. Include a title, a short summary (2-3 sentences), key topics or themes, and any mentioned entities (people, places, organizations). If the video seems to be a tutorial or instructional, note that.\n\nVideo Transcript:\n\"\"\"{stt_output}\"\"\"\n\nReturn the metadata as a JSON object.",
           "llm_params": {
             "temperature": 0.5,
@@ -92,7 +102,7 @@
           }
         },
         "document_processing": {
-          "llm_provider": "openai_gpt4o_vision",
+          "llm_provider": "openrouter_gpt5",
           "metadata_llm_prompt_template": "Analyze the following document text and extract structured metadata. This should include a suitable title, a concise summary (3-4 sentences), a list of 5-10 relevant keywords, and any key entities (like names, organizations, locations, dates) mentioned.\n\nDocument Text:\n\"\"\"{document_text}\"\"\"\n\nReturn the metadata as a JSON object.",
           "llm_params": {
             "temperature": 0.4,
@@ -103,8 +113,8 @@
       }
     },
     "profile_generation": {
-      "client": "openai",
-      "provider": "openai_gpt4o_vision",
+      "client": "openrouter",
+      "provider": "openrouter_gpt5",
       "prompt_template_version": "v1",
       "options": {
         "prompt_template": "You are an expert profile generator. Based on the following texts, create a structured JSON profile of the individual. The profile must strictly adhere to the provided JSON schema. Ensure all text fields are populated based *only* on the information present in the texts. If information for a non-required field is not available, omit the field or use a null value if appropriate for the schema type (but prefer omission for strings/arrays if empty).\n\nJSON Schema:\n```json\n{profile_schema}\n```\n\nInput Texts (concatenated):\n\"\"\"{texts_concatenated}\"\"\"\n\nGenerate the JSON profile:",
