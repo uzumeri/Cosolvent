@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File, Query, Body
 from fastapi.encoders import jsonable_encoder
 from typing import List, Optional
+import mimetypes
 import json
 import logging
+from bson.objectid import ObjectId  # type: ignore
+import httpx  # type: ignore
+
 from src.database.crud.profile_crud import (
     create_profile,
     update_profile as update_profile_crud,
@@ -15,19 +19,18 @@ from src.database.crud.profile_crud import (
     reject_ai_draft as reject_ai_draft_crud,
     add_file_in_producer_profile,
     update_file_in_producer_profile as update_file,
-    remove_file_from_producer_profile as remove_file
-    
+    remove_file_from_producer_profile as remove_file,
 )
 from src.schema.profile_schema import (
-    ProducerRegisterSchema, ProfileUpdateResponse, 
-    ProducerSchema, SuccessResponse, 
+    ProducerRegisterSchema,
+    ProfileUpdateResponse,
+    ProducerSchema,
+    SuccessResponse,
     ProfileUpdateSchema,
 )
 from src.schema.producer_file_schema import ProducerFileSchema
 from src.database.db import get_mongo_service
 from src.core.config import settings
-import httpx  # type: ignore
-from bson.objectid import ObjectId  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -38,24 +41,44 @@ router = APIRouter()
 async def register_producer(
     payload: ProducerRegisterSchema = Depends(ProducerRegisterSchema.as_form),
     files: List[UploadFile] = File(...),
-    files_metadata: str = Form(...),
-    db=Depends(get_mongo_service)
+    files_metadata: Optional[str] = Form(None),
+    db=Depends(get_mongo_service),
 ):
     """
     Submits a new producer application.
     """
-    try:
-        files_metadata_list = json.loads(files_metadata)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON in files_metadata.")
+    # Parse files metadata: if provided, must be valid JSON array; if missing, synthesize from files
+    files_metadata_list: List[dict] = []
+    if files_metadata is not None:
+        try:
+            parsed = json.loads(files_metadata)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON in files_metadata.")
+        if not isinstance(parsed, list):
+            raise HTTPException(status_code=400, detail="files_metadata must be a JSON array.")
+        files_metadata_list = parsed
+    else:
+        # synthesize minimal metadata matching each file
+        files_metadata_list = [
+            {
+                "filename": f.filename,
+                "file_type": (f.content_type or "unknown").split("/")[0],
+            }
+            for f in files
+        ]
+
+    # Ensure counts match exactly
+    if len(files) != len(files_metadata_list):
+        raise HTTPException(
+            status_code=400,
+            detail="The number of files must match the number of metadata entries.",
+        )
 
     logger.info(f"Registration attempt for email: {payload.email}")
     if await get_profile_by_email(db, payload.email):
         raise HTTPException(status_code=409, detail="A profile with this email already exists.")
 
-    logger.info(f"Creating new application for email: {payload.email}")
     profile_data = payload.dict(exclude_unset=True)
-    
     # Convert field names to match DB schema
     profile_data["farm_name"] = profile_data.pop("farmName")
     profile_data["contact_name"] = profile_data.pop("contactName")
@@ -67,43 +90,105 @@ async def register_producer(
 
     created_profile, profile_id = await create_profile(db, profile_data)
 
-    
-    if len(files) != len(files_metadata_list):
-        raise HTTPException(status_code=400, detail="The number of files must match the number of metadata entries.")
+    # Prepare files payload with normalized content types that asset_service accepts
+    ALLOWED_CT = {
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "video/mp4",
+        "video/mpeg",
+        "audio/mpeg",
+        "audio/wav",
+        "text/plain",
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }
 
-    metadata_map = {meta.get('filename'): meta for meta in files_metadata_list if meta.get('filename')}
-        
-    # Call asset service to register files and retrieve full ProducerFileSchema objects
-    asset_url = f"{settings.ASSET_SERVICE_URL}/api/{profile_id}/files"
+    def normalize_content_type(filename: str, content_type: Optional[str]) -> str:
+        ct = (content_type or "").strip().lower()
+        if ct in ALLOWED_CT:
+            return ct
+        # Try to guess from filename
+        guess, _ = mimetypes.guess_type(filename)
+        if guess and guess in ALLOWED_CT:
+            return guess
+        # Common mappings by extension
+        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+        mapping = {
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "png": "image/png",
+            "webp": "image/webp",
+            "pdf": "application/pdf",
+            "txt": "text/plain",
+            "mp4": "video/mp4",
+            "mpeg": "video/mpeg",
+            "mp3": "audio/mpeg",
+            "wav": "audio/wav",
+            "doc": "application/msword",
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        }
+        return mapping.get(ext, "application/octet-stream")
 
-    # Prepare multipart files payload
     files_payload = []
     for file in files:
         file.file.seek(0)
-        files_payload.append(("files", (file.filename, await file.read(), file.content_type)))
+        normalized_ct = normalize_content_type(file.filename, file.content_type)
+        files_payload.append(("files", (file.filename, await file.read(), normalized_ct)))
 
+    # Call asset service endpoint with small retry/backoff for transient issues
+    asset_url = f"{settings.ASSET_SERVICE_URL}/api/{profile_id}/files"
+    last_exc: Optional[Exception] = None
+    response = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(30.0, connect=5.0)) as client:
+                response = await client.post(
+                    asset_url,
+                    files=files_payload,
+                    data={"files_metadata": json.dumps(files_metadata_list)},
+                )
+            break
+        except (httpx.ConnectError, httpx.ReadTimeout) as e:
+            last_exc = e
+            logger.warning(f"Asset service call failed on attempt {attempt + 1}: {e}")
+            if attempt < 2:
+                import asyncio
 
-    # Call asset service endpoint
-    async with httpx.AsyncClient() as client:
-        response = await client.post(asset_url, files=files_payload, data={"files_metadata": files_metadata})
+                await asyncio.sleep(0.5 * (attempt + 1))
+            else:
+                raise HTTPException(status_code=502, detail="Could not reach asset service.")
+
+    if response is None:
+        raise HTTPException(status_code=502, detail="Asset service did not respond.")
     if response.status_code != 201:
-        raise HTTPException(status_code=502, detail="Failed to register files with asset service.")
-    
+        # Surface upstream error detail to help diagnose (map 4xx to client, 5xx to gateway error)
+        detail = None
+        try:
+            data = response.json()
+            detail = data.get("detail") if isinstance(data, dict) else None
+        except Exception:
+            detail = response.text
+        status = 400 if 400 <= response.status_code < 500 else 502
+        raise HTTPException(status_code=status, detail=detail or "Asset service rejected file upload.")
+
     # Parse returned file objects and convert to dicts for MongoDB storage
     files_data = response.json()
-    parsed = []
+    parsed_files = []
     for item in files_data:
         pf = ProducerFileSchema(**item)
         d = pf.dict(by_alias=True)
-        d["_id"] = str(d.get("_id"))
+        # ensure _id is string for embedding
+        if isinstance(d.get("_id"), (bytes, bytearray)):
+            d["_id"] = str(d.get("_id"))
+        else:
+            d["_id"] = str(d.get("_id"))
         d["profile_id"] = profile_id
-        parsed.append(d)
+        parsed_files.append(d)
 
     # Update producer record with embedded files
-    await db.producers.update_one(
-        {"_id": ObjectId(profile_id)},
-        {"$set": {"files": parsed}}
-    )
+    await db.producers.update_one({"_id": ObjectId(profile_id)}, {"$set": {"files": parsed_files}})
 
     application = await get_profile(db, profile_id)
     if not application:

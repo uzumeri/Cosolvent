@@ -1,13 +1,13 @@
 # providers/__init__.py
 from typing import Dict, Type
 from .base import LLMClient
-from .openai_client import OpenAIClient
+from .openrouter_client import OpenRouterClient
 from ..config.models import ProviderConfig, ClientName
 from ..core.exceptions import ProviderNotFoundException
 
 # Registry of available provider clients
 _provider_clients: Dict[ClientName, Type[LLMClient]] = {
-    ClientName.OPENAI: OpenAIClient,
+    ClientName.OPENROUTER: OpenRouterClient,
 }
 
 # Cache for instantiated clients to reuse them
@@ -43,7 +43,7 @@ def register_provider(name: str, client_class: Type[LLMClient]):
 # from . import get_client
 # async def some_service_function():
 #     app_config = await get_config()
-#     # Assuming 'translate' service uses 'openai' provider as per AppConfig
+#     # Example: translate service could point to a specific provider via AppConfig
 #     service_conf = app_config.services["translate"]
 #     provider_conf = app_config.providers[service_conf.provider]
 #     client = await get_client(service_conf.provider, provider_conf)

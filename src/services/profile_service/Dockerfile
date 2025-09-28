@@ -11,10 +11,12 @@ RUN apt-get update && \
 
 # Install Python dependencies
 COPY src/services/profile_service/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --default-timeout=120 --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY src/services/profile_service/ .
+# Normalize potential CRLF line endings
+RUN dos2unix entrypoint.sh || true
 
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh

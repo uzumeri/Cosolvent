@@ -7,11 +7,9 @@ python-dotenv
 boto3
 python-multipart
 tenacity
-openai
 requests
 email-validator
 aiohttp
 PyMuPDF
 pinecone
 resend
-httpx

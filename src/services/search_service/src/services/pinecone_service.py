@@ -12,16 +12,21 @@ class PineconeService:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(PineconeService, cls).__new__(cls)
-            cls._instance._initialize()
+            cls._instance._initialized = False
         return cls._instance
 
-    def _initialize(self):
+    def _ensure_initialized(self):
+        if self._initialized:
+            return
+        if not settings.PINECONE_API_KEY:
+            raise RuntimeError("PINECONE_API_KEY is not set. Set it in the environment to use Pinecone features.")
         self.pinecone = Pinecone(api_key=settings.PINECONE_API_KEY, environment=settings.PINECONE_ENVIRONMENT)
         self.index_name = settings.PINECONE_INDEX_NAME
-        self.dimension = settings.OPENAI_EMBEDDING_DIMENSION
-        self.metric = "cosine" # or "euclidean", "dotproduct" - cosine is generally good for semantic search
-
+        self.dimension = settings.EMBEDDING_DIMENSION
+        self.metric = "cosine"
         self._connect_to_index()
+        self._initialized = True
+        return
 
     def _connect_to_index(self):
         """Connects to the Pinecone index, creating it if it doesn't exist."""
@@ -57,15 +62,11 @@ class PineconeService:
         Vectors should be a list of dictionaries with 'id', 'values', and 'metadata'.
         Example: [{"id": "doc1", "values": [0.1, 0.2, ...], "metadata": {"key": "value"}}]
         """
+        self._ensure_initialized()
         if not self._index:
             raise ConnectionError("Pinecone index not initialized.")
         try:
-            # Pinecone recommends batching upserts for efficiency
-            # max_batch_size = 100 # Can be adjusted based on vector size and network
-            # for i in range(0, len(vectors), max_batch_size):
-            #     batch = vectors[i:i + max_batch_size]
-            #     self._index.upsert(vectors=batch)
-            self._index.upsert(vectors=vectors) # For simplicity, not batching here, but recommended for large lists
+            self._index.upsert(vectors=vectors)
             return True
         except Exception as e:
             print(f"Error upserting vectors to Pinecone: {e}")
@@ -77,17 +78,12 @@ class PineconeService:
         Returns top_k matches with their metadata.
         Filters allow narrowing down the search results by metadata.
         """
+        self._ensure_initialized()
         if not self._index:
             raise ConnectionError("Pinecone index not initialized.")
         try:
-            query_response = self._index.query(
-                vector=vector,
-                top_k=top_k,
-                include_metadata=True,
-                filter=filters
-            )
-            # Pinecone query results are in query_response.matches
-            return query_response.matches
+            query_response = self._index.query(vector=vector, top_k=top_k, include_metadata=True, filter=filters)
+            return query_response.matches or []
         except Exception as e:
             print(f"Error querying Pinecone: {e}")
             raise
@@ -95,10 +91,10 @@ class PineconeService:
         """
         Deletes all vectors from the Pinecone index.
         """
+        self._ensure_initialized()
         if not self._index:
             raise ConnectionError("Pinecone index not initialized.")
         try:
-            # Delete all vectors in the index
             self._index.delete(delete_all=True)
             print(f"All vectors deleted from index '{self.index_name}'.")
             return True

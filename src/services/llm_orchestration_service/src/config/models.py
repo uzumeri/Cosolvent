@@ -3,7 +3,7 @@ from typing import Dict, Optional, Any, List
 from enum import Enum
 
 class ClientName(str, Enum):
-    OPENAI = "openai"
+    OPENROUTER = "openrouter"
 
 class ProfileType(str, Enum):
     EXPORTER = "exporter"

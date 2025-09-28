@@ -23,3 +23,8 @@ app.include_router(asset_routes, prefix="/api")
 @app.on_event("startup")
 async def startup_event():
     logger.info("Application startup.")
+
+
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}

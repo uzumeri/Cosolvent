@@ -1,15 +1,11 @@
-# app/api/routes.py
 from fastapi import APIRouter, HTTPException, status, Query
 from typing import List
 from pydantic import ValidationError
 from src.schema.search_schema import  SearchResponse, QueryRequest, ProducerSimilarity, IndexRequest
 from src.services.pinecone_service import pinecone_service
-from src.services.openai_service import openai_service
+from src.services.embedding_service import embedding_service
 from src.services.index_service import index_producer
 router = APIRouter()
-
-@router.post("/index", response_model=dict)
-
 
 @router.post("/index", response_model=dict)
 async def index_producer_data(request: IndexRequest):
@@ -35,8 +31,8 @@ async def search_producers(request: QueryRequest):
     Allows for optional metadata filtering (region, certifications, primary crops).
     """
     try:
-        # Vectorize the query using OpenAI
-        query_vector = openai_service.get_embedding(request.query)
+        # Vectorize the query using the centralized orchestration embeddings
+        query_vector = embedding_service.get_embedding(request.query)
 
         # Prepare metadata filters
         filters = {}
