@@ -4,15 +4,13 @@ import {
   uploadDocument,
 } from "@/controllers/documentController";
 import { DocumentService } from "@/services/documentService";
-import type { PineconeStore } from "@langchain/pinecone";
+import type { PgVectorStore } from "@/stores/pgVectorStore";
 import { Hono } from "hono";
 import type Redis from "ioredis";
-import type { Db } from "mongodb";
-
-const documentRoutes = (db: Db, redis: Redis, pinecone: PineconeStore) => {
+const documentRoutes = (redis: Redis, store: PgVectorStore) => {
   const router = new Hono();
 
-  const ds = new DocumentService(db, redis, pinecone);
+  const ds = new DocumentService(redis, store);
 
   router.get("/", getAllDocuments(ds));
   router.post("/", uploadDocument(ds));

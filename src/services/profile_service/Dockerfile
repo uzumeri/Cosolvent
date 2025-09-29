@@ -15,8 +15,9 @@ RUN pip install --default-timeout=120 --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY src/services/profile_service/ .
-# Normalize potential CRLF line endings
-RUN dos2unix entrypoint.sh || true
+
+# Normalize potential CRLF line endings on entrypoint
+RUN sed -i 's/\r$//' entrypoint.sh || true
 
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh

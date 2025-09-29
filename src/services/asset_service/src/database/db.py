@@ -1,19 +1,21 @@
 import logging
-from motor.motor_asyncio import AsyncIOMotorClient
+import asyncpg
 from src.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 
-class MongoService:
+class DB:
     def __init__(self):
-        logger.info("Initializing Async MongoService...")
-        self.client = AsyncIOMotorClient(settings.MONGO_URI, uuidRepresentation="standard")
-        self.db = self.client[settings.MONGODB_NAME]
-        self.producer_files = self.db["producer_files"]
-        logger.info("Async MongoService initialized.")
+        self._pool: asyncpg.Pool | None = None
 
-mongoService = MongoService()
+    async def pool(self) -> asyncpg.Pool:
+        if self._pool is None:
+            logger.info("Connecting to Postgres (asset_service)...")
+            self._pool = await asyncpg.create_pool(settings.DATABASE_URL, min_size=1, max_size=10)
+        return self._pool
 
-def get_mongo_service():
-    """Dependency callable that returns a MongoService instance."""
-    return mongoService
+db = DB()
+
+async def get_db():
+    return await db.pool()

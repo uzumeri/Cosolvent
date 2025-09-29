@@ -9,7 +9,7 @@ TypeScript service built with Hono to provide authentication and session primiti
 - Provide typed DTOs (Zod) for auth flows.
 
 ## Tech Stack
-- Hono, Node 20+, TypeScript, Biome for lint/format, MongoDB.
+- Hono, Node 20+, TypeScript, Biome for lint/format, Postgres.
 
 ## Commands (run in `src/services/auth_service`)
 - `pnpm install`
@@ -18,7 +18,7 @@ TypeScript service built with Hono to provide authentication and session primiti
 - `pnpm lint` / `pnpm format` — code quality.
 
 ## Configuration
-- Environment comes from root `.env` and service `.env`. Typical keys: Mongo connection, JWT/session secrets.
+- Environment comes from root `.env` and service `.env`. Typical keys: DATABASE_URL (Postgres), JWT/session secrets.
 
 ## Notes
 - Exposes auth endpoints for the frontend and other services. Review `src/app.ts` and `src/server.ts` for route mounting and middleware.

@@ -1,30 +1,27 @@
-import { connectToDB } from "@/lib/db";
 import { createDocumentWorker } from "./documentWorker";
 import env from "@/config/env";
 import { newOpenAIEmbedding } from "@/factory/embeddings";
 import Redis from "ioredis";
-import { Pinecone } from "@pinecone-database/pinecone";
+import { newVectorStore } from "@/factory/vectorStores";
 
 async function main() {
-  const db = await connectToDB();
   const redis = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null }); // maxRetriesPerRequest: null is required by bullmq
   const embedding = newOpenAIEmbedding({
     modelName: "text-embedding-3-small",
   });
-  const pc = new Pinecone({ apiKey: env.PINECONE_API_KEY });
-  const pcIndex = pc.Index(env.PINECONE_INDEX_NAME);
+  const vectorStore = await newVectorStore(embedding, "embeddings");
 
-  const worker = createDocumentWorker(db, redis, pcIndex, embedding);
+  const worker = createDocumentWorker(redis, vectorStore, embedding);
 
-  worker.on("error", (err) => {
+  worker.on("error", (err: any) => {
     console.error("Worker error", err);
   });
 
-  worker.on("failed", (job, err) => {
+  worker.on("failed", (job: any, err: any) => {
     console.error("Job failed", job, err);
   });
 
-  worker.on("completed", (job, result) => {
+  worker.on("completed", (job: any, result: any) => {
     console.log("Job completed", job, result);
   });
 

@@ -2,7 +2,7 @@
 
 [← Services](./README.md) | [← Contents](../README.md)
 
-Python FastAPI service offering LLM-adjacent utilities (e.g., metadata extraction) with configuration persisted in MongoDB.
+Python FastAPI service offering LLM-adjacent utilities (e.g., metadata extraction) with configuration persisted in Postgres.
 
 ## Responsibilities
 - File and image metadata extraction with LLM assistance.
@@ -17,7 +17,7 @@ Python FastAPI service offering LLM-adjacent utilities (e.g., metadata extractio
 - Docker: brought up via `docker compose up`.
 
 ## Configuration
-- Config file `config.json` plus MongoDB-backed store; env vars set in `docker-compose.yml` (mongodb_uri/db/collection).
+- Config file `config.json` plus Postgres-backed store; env vars set in `docker-compose.yml` (DATABASE_URL).
 
 ## Tests
 - Pytest examples in `tests/` show how to stub LLM calls and validate endpoints.

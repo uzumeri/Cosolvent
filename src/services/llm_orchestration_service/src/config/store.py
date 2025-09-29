@@ -2,7 +2,7 @@ import asyncio
 from typing import Optional
 
 from .models import AppConfig
-from . import mongo_store
+from . import pg_store as store
 
 _config: Optional[AppConfig] = None
 _lock = asyncio.Lock()
@@ -11,7 +11,7 @@ _lock = asyncio.Lock()
 async def load_config() -> AppConfig:
     global _config
     async with _lock:
-        _config = await mongo_store.get_all()
+        _config = await store.get_all()
         return _config
 
 
@@ -25,7 +25,7 @@ async def get_config() -> AppConfig:
 
 async def update_config(new_config: AppConfig) -> AppConfig:
     async with _lock:
-        updated = await mongo_store.update(new_config)
+        updated = await store.update(new_config)
         global _config
         _config = updated
         return updated
@@ -33,7 +33,7 @@ async def update_config(new_config: AppConfig) -> AppConfig:
 
 async def patch_config(patch_data: dict) -> AppConfig:
     async with _lock:
-        updated = await mongo_store.patch_config(patch_data)
+        updated = await store.patch_config(patch_data)
         global _config
         _config = updated
         return updated

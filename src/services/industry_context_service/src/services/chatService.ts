@@ -1,5 +1,4 @@
 import type Redis from "ioredis";
-import type { Db } from "mongodb";
 import { v4 as uuidv4 } from "uuid";
 import newChatAgent from "./chatAgent";
 import { PromptService } from "./promptService";
@@ -10,7 +9,6 @@ type ChatService = {
 };
 
 const chatService = async (
-	db: Db,
 	redis: Redis,
 	{ threadId, question }: ChatService,
 ) => {
@@ -24,7 +22,7 @@ const chatService = async (
 		},
 	];
 
-	const promptService = new PromptService(db, redis);
+	const promptService = new PromptService(redis);
 	const systemPrompt = await promptService.getPrompt();
 
 	const chatAget = await newChatAgent({ systemPrompt });

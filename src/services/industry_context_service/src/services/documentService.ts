@@ -1,14 +1,13 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { type DocumentSchema, getDocumentCollection } from "@/models/document";
+import { type DocumentSchema } from "@/models/document";
+import { insertDocument, setJobId, deleteByDocId, findByDocId, listAll } from "@/repositories/documentRepo";
 import type { Job } from "bullmq";
 import type { Redis } from "ioredis";
-import type { Db } from "mongodb";
-import { ObjectId } from "mongodb";
 import { v4 as uuidv4 } from "uuid";
 import { newDocumentQueue } from "@/queues/documentQueue";
 import { DOCUMENT_PROCESSING_WORKER_NAME } from "@/workers/documentWorker";
-import type { PineconeStore } from "@langchain/pinecone";
+import type { PgVectorStore } from "@/stores/pgVectorStore";
 
 interface UploadDocumentInput {
   file: {
@@ -19,15 +18,9 @@ interface UploadDocumentInput {
 }
 
 export class DocumentService {
-  constructor(
-    private db: Db,
-    private redis: Redis,
-    private pinecone: PineconeStore,
-  ) {}
+  constructor(private redis: Redis, private store: PgVectorStore) {}
 
-  private documentsCollection() {
-    return getDocumentCollection(this.db);
-  }
+  // Postgres-backed repo used instead of a collection
 
   private documentsQue() {
     return newDocumentQueue(this.redis);
@@ -55,7 +48,7 @@ export class DocumentService {
       updatedAt: now,
     };
 
-    await this.documentsCollection().insertOne(metadata);
+  await insertDocument(metadata);
 
     // Enqueue job for background processing
     const job: Job = await this.documentsQue().add(
@@ -69,10 +62,7 @@ export class DocumentService {
       },
     );
 
-    await this.documentsCollection().updateOne(
-      { docId },
-      { $set: { jobId: job.id, updatedAt: new Date() } },
-    );
+    await setJobId(docId, String(job.id));
 
     return {
       message: "Document upload accepted for processing.",
@@ -83,24 +73,15 @@ export class DocumentService {
   }
 
   async deleteDocument(id: string) {
-    const result = await this.documentsCollection().findOne({
-      _id: new ObjectId(id),
-    });
+  const result = await findByDocId(id);
     if (!result) {
       throw new Error("Document not found");
     }
 
-    await this.documentsCollection().deleteOne({ _id: new ObjectId(id) });
-
-    await this.pinecone.delete({ filter: { docId: result.docId } });
+  await deleteByDocId(id);
   }
 
   async getAllDocuments() {
-    const docs = await this.documentsCollection()
-      .find()
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    return docs;
+    return await listAll();
   }
 }

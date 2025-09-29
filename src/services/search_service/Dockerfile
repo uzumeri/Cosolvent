@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY src/services/search_service/ .
 
+# Normalize potential CRLF line endings on entrypoint
+RUN sed -i 's/\r$//' entrypoint.sh || true
+
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh
 

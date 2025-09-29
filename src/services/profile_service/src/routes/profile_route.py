@@ -4,8 +4,8 @@ from typing import List, Optional
 import mimetypes
 import json
 import logging
-from bson.objectid import ObjectId  # type: ignore
 import httpx  # type: ignore
+import asyncpg
 
 from src.database.crud.profile_crud import (
     create_profile,
@@ -29,7 +29,7 @@ from src.schema.profile_schema import (
     ProfileUpdateSchema,
 )
 from src.schema.producer_file_schema import ProducerFileSchema
-from src.database.db import get_mongo_service
+from src.database.db import get_db
 from src.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ async def register_producer(
     payload: ProducerRegisterSchema = Depends(ProducerRegisterSchema.as_form),
     files: List[UploadFile] = File(...),
     files_metadata: Optional[str] = Form(None),
-    db=Depends(get_mongo_service),
+    db: asyncpg.Pool = Depends(get_db),
 ):
     """
     Submits a new producer application.
@@ -173,7 +173,7 @@ async def register_producer(
         status = 400 if 400 <= response.status_code < 500 else 502
         raise HTTPException(status_code=status, detail=detail or "Asset service rejected file upload.")
 
-    # Parse returned file objects and convert to dicts for MongoDB storage
+    # Parse returned file objects and convert to dicts for JSONB storage
     files_data = response.json()
     parsed_files = []
     for item in files_data:
@@ -188,7 +188,8 @@ async def register_producer(
         parsed_files.append(d)
 
     # Update producer record with embedded files
-    await db.producers.update_one({"_id": ObjectId(profile_id)}, {"$set": {"files": parsed_files}})
+    # Persist files JSONB on producer row
+    await update_profile_crud(db, profile_id, {"files": parsed_files})
 
     application = await get_profile(db, profile_id)
     if not application:
@@ -201,7 +202,7 @@ async def register_producer(
 async def update_producer_profile(
     profile_id: str,
     payload: ProfileUpdateSchema = Body(...),
-    db=Depends(get_mongo_service),
+    db: asyncpg.Pool = Depends(get_db),
 ):
     """
     Updates an existing producer profile (both applications and approved producers).
@@ -234,7 +235,7 @@ async def update_producer_profile(
 @router.get("/producer", response_model=ProducerSchema)
 async def read_producer_profile_by_email(
     email: str = Query(..., description="Email of the producer to retrieve"),
-    db=Depends(get_mongo_service)
+    db: asyncpg.Pool = Depends(get_db)
 ):
     """
     Retrieves public-facing information for a specific producer by email.
@@ -246,7 +247,7 @@ async def read_producer_profile_by_email(
 
 
 @router.delete("/{producer_id}", response_model=SuccessResponse)
-async def delete_producer_profile(producer_id: str, db=Depends(get_mongo_service)):
+async def delete_producer_profile(producer_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Performs a 'soft delete' by setting the profile status to suspended.
     """
@@ -261,7 +262,7 @@ async def list_producers(
     status: Optional[str] = Query(None, enum=["active", "suspended"]),
     skip: int = 0,
     limit: int = 100,
-    db=Depends(get_mongo_service)
+    db: asyncpg.Pool = Depends(get_db)
 ):
     """
     Lists approved producers with optional status filtering and pagination.
@@ -270,7 +271,7 @@ async def list_producers(
     return jsonable_encoder(producers)
 
 @router.get("/producers/{producer_id}", response_model=ProducerSchema)
-async def read_producer_profile(producer_id: str, db=Depends(get_mongo_service)):
+async def read_producer_profile(producer_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Retrieves a producer's profile by their ID.
     """
@@ -283,7 +284,7 @@ async def read_producer_profile(producer_id: str, db=Depends(get_mongo_service))
 
 
 @router.post("/profiles/{producer_id}/generate-ai-profile", response_model=SuccessResponse)
-async def generate_ai_profile(producer_id: str, db=Depends(get_mongo_service)):
+async def generate_ai_profile(producer_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Generates an AI-powered profile description and saves it as a draft.
     """
@@ -300,7 +301,7 @@ async def generate_ai_profile(producer_id: str, db=Depends(get_mongo_service)):
 
 
 @router.post("/profiles/{producer_id}/approve-ai-draft", response_model=SuccessResponse)
-async def approve_ai_draft(producer_id: str, db=Depends(get_mongo_service)):
+async def approve_ai_draft(producer_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Approves the AI-generated profile draft, making it the official AI profile.
     """
@@ -321,7 +322,7 @@ async def approve_ai_draft(producer_id: str, db=Depends(get_mongo_service)):
         logger.error(f"Error calling search service index endpoint: {e}")
     return {"success": True, "message": "AI draft approved."}
 
-async def reject_ai_draft(producer_id: str, db=Depends(get_mongo_service)):
+async def reject_ai_draft(producer_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Rejects and deletes the current AI profile draft.
     """
@@ -334,7 +335,7 @@ async def reject_ai_draft(producer_id: str, db=Depends(get_mongo_service)):
 async def add_file_to_producer_profile(
     producer_id: str,
     file: ProducerFileSchema = Body(...),
-    db=Depends(get_mongo_service)
+    db: asyncpg.Pool = Depends(get_db)
 ):
     """
     Adds a file to the producer's profile.
@@ -347,7 +348,7 @@ async def add_file_to_producer_profile(
 async def update_file_in_producer_profile(
     producer_id: str,
     file: ProducerFileSchema = Body(...),
-    db=Depends(get_mongo_service)
+    db: asyncpg.Pool = Depends(get_db)
 ):
     """
     Updates a file in the producer's profile.
@@ -360,7 +361,7 @@ async def update_file_in_producer_profile(
 async def remove_file_from_producer_profile(
     producer_id: str,
     file_id: str,
-    db=Depends(get_mongo_service)
+    db: asyncpg.Pool = Depends(get_db)
 ):
     """
     Removes a file from the producer's profile.

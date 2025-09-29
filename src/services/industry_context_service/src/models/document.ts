@@ -1,5 +1,3 @@
-import type { Collection, Db } from "mongodb";
-
 export type DocumentStatus = "QUEUED" | "PROCESSING" | "INDEXED" | "FAILED";
 
 export interface DocumentSchema {
@@ -14,6 +12,3 @@ export interface DocumentSchema {
   createdAt: Date;
   updatedAt: Date;
 }
-
-export const getDocumentCollection = (db: Db): Collection<DocumentSchema> =>
-  db.collection<DocumentSchema>("documents");

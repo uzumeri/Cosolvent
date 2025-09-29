@@ -14,7 +14,7 @@ Python FastAPI service handling asset ingestion, processing, and storage to MinI
 
 ## Configuration
 - Requires S3 credentials and bucket (MinIO). Compose includes `s3-server` and `mc` initializer.
-- RabbitMQ and MongoDB URLs are injected via `docker-compose.yml`.
+- RabbitMQ URL and DATABASE_URL are injected via `docker-compose.yml`.
 
 ## Notes
 - Utilities under `utils/` include S3 uploader, file handling, and analyzers.

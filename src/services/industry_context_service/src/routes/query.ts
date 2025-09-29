@@ -1,12 +1,12 @@
 import queryPostController from "@/controllers/queryController";
 import { Hono } from "hono";
+import type { Context } from "hono";
 import type Redis from "ioredis";
-import type { Db } from "mongodb";
 
-const queryRoutes = (db: Db, redis: Redis) => {
+const queryRoutes = (redis: Redis) => {
 	const router = new Hono();
 
-	router.post("/", (c) => queryPostController(c, db, redis));
+	router.post("/", (c: Context) => queryPostController(c, redis));
 
 	return router;
 };

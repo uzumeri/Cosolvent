@@ -1,6 +1,4 @@
 import env from "@/config/env";
-import { connectToDB } from "@/lib/db";
-import { ObjectId } from "mongodb";
 import readline from "node:readline";
 
 const rl = readline.createInterface({
@@ -15,7 +13,6 @@ function prompt(question: string): Promise<string> {
 }
 
 async function seedAdmin() {
-	const db = await connectToDB();
 
 	const name = await prompt("📝 Enter admin name: ");
 	const email = await prompt("📧 Enter admin email: ");
@@ -28,14 +25,7 @@ async function seedAdmin() {
 		userType: "SERVICE_PROVIDER",
 	};
 
-	const userCollection = db.collection("user");
-
-	const existingUser = await userCollection.findOne({ email });
-	if (existingUser) {
-		console.log(`⚠️  User with email "${email}" already exists.`);
-		rl.close();
-		process.exit(1);
-	}
+	// Let the API decide if the user already exists
 
 	//  Call API to create a user
 	const res = await fetch(`${env.BASE_URL}/api/auth/sign-up/email`, {
@@ -50,17 +40,8 @@ async function seedAdmin() {
 	}
 
 	const data = await res.json();
-	const userId = new ObjectId(data.user.id);
-
-	try {
-		await userCollection.updateOne(
-			{ _id: userId },
-			{ $set: { role: "admin", userType: "admin", emailVerified: true } },
-		);
-	} catch (error) {
-		console.error("Failed to update user:", error);
-		process.exit(1);
-	}
+	console.log("User created:", data.user?.id ?? "unknown");
+	console.log("NOTE: Granting admin role should be done via an admin endpoint or directly in Postgres.");
 
 	console.log(`✅ Admin "${email}" created successfully.`);
 

@@ -4,7 +4,8 @@ FROM node:20-slim AS base
 # Set environment variables for pnpm
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+# Install a pinned pnpm to avoid Corepack network lookups during build
+RUN npm i -g pnpm@10.15.1
 WORKDIR /app
 
 # ---- Dependencies stage (only prod deps) ----
@@ -33,9 +34,8 @@ FROM node:20-slim AS final
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 WORKDIR /app
-
-# Install pnpm only
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install a pinned pnpm runtime for start script
+RUN npm i -g pnpm@10.15.1
 
 # Copy built app and only required files
 COPY --from=prod-deps /app/node_modules ./node_modules

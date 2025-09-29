@@ -6,7 +6,7 @@ TypeScript service with HTTP server (Hono) and background workers to ingest, tra
 
 ## Responsibilities
 - Ingest files/text, extract features and embeddings, and build industry context.
-- Schedule background jobs (BullMQ) and persist artifacts in MongoDB/MinIO.
+- Schedule background jobs (BullMQ) and persist artifacts in Postgres/MinIO.
 
 ## Tech Stack
 - Hono, BullMQ (Redis), TypeScript, TSUP/TSX, Biome.
@@ -18,7 +18,7 @@ TypeScript service with HTTP server (Hono) and background workers to ingest, tra
 - `pnpm build && pnpm start` and `pnpm start:worker` — production run.
 
 ## Configuration
-- Uses root `.env` and service `.env.example`. Requires Redis, MongoDB, and optional S3/LLM keys.
+- Uses root `.env` and service `.env.example`. Requires Redis, Postgres (DATABASE_URL), and optional S3/LLM keys.
 - Compose mounts `shared-temp` for transient files.
 
 ## Notes

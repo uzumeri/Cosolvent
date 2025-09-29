@@ -1,20 +1,17 @@
 import { tool } from "@langchain/core/tools";
-import type { PineconeStore } from "@langchain/pinecone";
+import type { PgVectorStore } from "@/stores/pgVectorStore";
 import { z } from "zod";
 
 const retrieveSchema = z.object({ query: z.string() });
 
-type supportedStores = PineconeStore;
+type supportedStores = PgVectorStore;
 
 const createRetrieveTool = (store: supportedStores) => {
 	return tool(
 		async ({ query }: { query: string }) => {
 			const retrievedDocs = await store.similaritySearch(query, 3);
 			const serialized = retrievedDocs
-				.map(
-					(doc) =>
-						`Source: ${doc.metadata.source}\nContent: ${doc.pageContent}`,
-				)
+				.map((doc: any) => `Source: ${doc.metadata?.source}\nContent: ${doc.pageContent ?? doc.id}`)
 				.join("\n");
 			return serialized;
 		},
