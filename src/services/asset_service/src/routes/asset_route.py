@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File
 from fastapi.encoders import jsonable_encoder
 from typing import List
+import os
 import json
 import logging
 import httpx
@@ -188,13 +189,21 @@ async def upload_files_to_profile(
     if len(files) != len(files_metadata_list):
         raise HTTPException(status_code=400, detail="The number of files must match the number of metadata entries.")
 
-    metadata_map = {meta.get('filename'): meta for meta in files_metadata_list if meta.get('filename')}
+    def _norm(name: str | None) -> str:
+        if not name:
+            return ""
+        # Normalize by basename and lower-case for tolerant matching
+        return os.path.basename(name).strip().lower()
+
+    # Build a tolerant lookup map by normalized filename
+    metadata_map = { _norm(meta.get('filename')): meta for meta in files_metadata_list if meta.get('filename') }
     file_objs: List[ProducerFileSchema] = []
     for file in files:
-        if not file.filename or file.filename not in metadata_map:
+        key = _norm(file.filename)
+        if not file.filename or key not in metadata_map:
             raise HTTPException(status_code=400, detail=f"Metadata for file '{file.filename}' is missing.")
 
-        file_meta = metadata_map[file.filename]
+        file_meta = metadata_map[key]
         file_type = file_meta.get("file_type")
         if not file_type:
             raise HTTPException(status_code=400, detail=f"file_type is missing for file '{file.filename}'.")

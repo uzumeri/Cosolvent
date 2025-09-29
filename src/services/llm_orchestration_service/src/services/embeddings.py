@@ -30,8 +30,6 @@ async def create_embedding(text: str, service_name: str = "embeddings") -> List[
     if not provider_cfg:
         raise ValueError(f"Provider '{service_cfg.provider}' is not configured.")
 
-    client = await get_llm_provider_client(service_cfg.client, provider_cfg)
-
     opts = service_cfg.options or {}
     llm_params = (opts.get("llm_params") or {})
     # dimensions may be provided in options.llm_params.dimensions
@@ -52,6 +50,7 @@ async def create_embedding(text: str, service_name: str = "embeddings") -> List[
         return _fallback_vec(text, dimensions)
 
     try:
+        client = await get_llm_provider_client(service_cfg.client, provider_cfg)
         vectors = await client.create_embedding([text], dimensions=dimensions)
         if not vectors:
             raise ValueError("No embedding returned from provider")

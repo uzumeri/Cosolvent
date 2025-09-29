@@ -30,7 +30,7 @@ def _row_to_model(r: asyncpg.Record) -> ProducerModel:
                 f = {**f, "_id": str(fid), "id": str(fid)}
         norm_files.append(f)
     return ProducerModel(
-        id=str(r["id"]),
+        _id=str(r["id"]),
         farm_name=r["farm_name"],
         contact_name=r["contact_name"],
         email=r["email"],

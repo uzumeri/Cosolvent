@@ -1,5 +1,6 @@
 from uuid import uuid4
 import boto3
+from botocore.config import Config as BotoConfig
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
 from fastapi import HTTPException, UploadFile
 import logging
@@ -11,13 +12,24 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
+def _create_s3_client():
+    """
+    Create a boto3 S3 client that supports both AWS S3 and S3-compatible endpoints (e.g., MinIO).
+    For S3-compatible endpoints we prefer path-style addressing to avoid DNS-style bucket names.
+    """
+    client_kwargs = {
+        "aws_access_key_id": settings.AWS_ACCESS_KEY_ID,
+        "aws_secret_access_key": settings.AWS_SECRET_ACCESS_KEY,
+        "region_name": settings.AWS_REGION,
+    }
+    # If a custom endpoint is provided (e.g., MinIO), use it and prefer path-style addressing
+    if settings.S3_ENDPOINT:
+        client_kwargs["endpoint_url"] = settings.S3_ENDPOINT
+        client_kwargs["config"] = BotoConfig(signature_version="s3v4", s3={"addressing_style": "path"})
+    return boto3.client("s3", **client_kwargs)
+
 # Initialize S3 client
-s3_client = boto3.client(
-    's3',
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-    region_name=settings.AWS_REGION
-)
+s3_client = _create_s3_client()
 
 TEMP_DIR = "tmp/"
 if not os.path.exists(TEMP_DIR):
@@ -27,10 +39,14 @@ def ensure_bucket_exists(bucket_name: str):
         s3_client.head_bucket(Bucket=bucket_name)
     except ClientError as e:
         err = e.response.get("Error", {})
-        code = err.get("Code", "")
-        if code in ["404", "NoSuchBucket", "NotFound", "404 Not Found"]:
+        code = (err.get("Code", "") or "").strip()
+        # Treat typical not-found codes as missing bucket
+        not_found_codes = {"404", "NoSuchBucket", "NotFound", "404 Not Found"}
+        should_try_create = code in not_found_codes or code.startswith("403") or code == "AccessDenied"
+        if should_try_create:
             create_kwargs = {"Bucket": bucket_name}
-            if settings.AWS_REGION and settings.AWS_REGION != "us-east-1":
+            # When using a custom S3 endpoint (e.g., MinIO), do NOT pass CreateBucketConfiguration
+            if not settings.S3_ENDPOINT and settings.AWS_REGION and settings.AWS_REGION != "us-east-1":
                 create_kwargs["CreateBucketConfiguration"] = {"LocationConstraint": settings.AWS_REGION}
             try:
                 s3_client.create_bucket(**create_kwargs)
@@ -40,6 +56,20 @@ def ensure_bucket_exists(bucket_name: str):
         else:
             msg = err.get("Message", "")
             raise HTTPException(status_code=500, detail=f"Failed to access bucket: {msg}") from e
+
+def _build_public_url(bucket: str, key: str) -> str:
+    """Construct a public URL for the uploaded object.
+    - If S3_ENDPOINT is set (e.g., MinIO), use path-style: {endpoint}/{bucket}/{key}
+    - Otherwise, use the AWS S3 URL format.
+    """
+    endpoint = (settings.S3_ENDPOINT or "").rstrip("/")
+    if endpoint:
+        return f"{endpoint}/{bucket}/{key}"
+    # Default to AWS URL style
+    scheme = "https"
+    region = settings.AWS_REGION or "us-east-1"
+    # For us-east-1, AWS often omits region in hostname, but this format works generally
+    return f"{scheme}://{bucket}.s3.{region}.amazonaws.com/{key}"
 
 async def upload_file_to_s3(file: UploadFile, object_name: str = None) -> str:
     """
@@ -71,7 +101,6 @@ async def upload_file_to_s3(file: UploadFile, object_name: str = None) -> str:
     try:
         s3_client.upload_fileobj(
             io.BytesIO(data),
-            
             settings.S3_BUCKET_NAME,
             key,
             ExtraArgs={"ContentType": file.content_type},
@@ -82,7 +111,7 @@ async def upload_file_to_s3(file: UploadFile, object_name: str = None) -> str:
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {msg}") from e
 
     # Public URL (objects must be public via bucket policy)
-    url = f"https://{settings.S3_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{key}"
+    url = _build_public_url(settings.S3_BUCKET_NAME, key)
     return url
 
 
@@ -92,9 +121,18 @@ async def delete_file_from_s3(file_url: str):
     """
     try:
         bucket_name = settings.S3_BUCKET_NAME
-        # Extract the object key from the URL
-        key = file_url.split(f"{bucket_name}.s3.{settings.AWS_REGION}.amazonaws.com/")[1]
-        
+        key: str | None = None
+        if settings.S3_ENDPOINT:
+            # Expect path-style: {endpoint}/{bucket}/{key}
+            base = (settings.S3_ENDPOINT or "").rstrip("/")
+            prefix = f"{base}/{bucket_name}/"
+            if prefix in file_url:
+                key = file_url.split(prefix, 1)[1]
+        if key is None:
+            # Fallback to AWS style parsing
+            marker = f"{bucket_name}.s3.{settings.AWS_REGION}.amazonaws.com/"
+            key = file_url.split(marker, 1)[1]
+
         s3_client.delete_object(Bucket=bucket_name, Key=key)
         logger.info(f"Successfully deleted {key} from S3 bucket {bucket_name}.")
         return True
