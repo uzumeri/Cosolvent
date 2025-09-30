@@ -51,7 +51,7 @@ services:
       context: ./frontend
     ports:
       - "3000:3000"
-    environment:
+    env_file:
       - ./frontend/.env
     networks:
       - app_network
@@ -75,6 +75,11 @@ services:
       - search_service
     networks:
       - app_network
+    healthcheck:
+        test: ["CMD-SHELL", "curl -f http://localhost/healthz || exit 1"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
 
   # ─── Application Services ─────────────────────────────────────────────────
 
@@ -86,8 +91,15 @@ services:
       - redis
       - rabbitmq
       - postgres
+    ports:
+      - "8003:8003"
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8003/healthz').getcode()==200 else 1)\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   asset_service:
     build:
@@ -96,6 +108,11 @@ services:
     environment:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_REGION=${S3_REGION}
     ports:
       - "5001:5001"  # Expose asset service on port 5001
     depends_on:
@@ -108,10 +125,10 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5001/healthz || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5001/healthz').getcode()==200 else 1)\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   auth_service:
     build:
@@ -126,6 +143,11 @@ services:
       - ./src/services/auth_service/.env
     environment:
       - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8020/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   industry_context_service:
     build:
@@ -144,6 +166,11 @@ services:
       - app_network
     volumes:
       - shared-temp:/app/tmp
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8004/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   industry_context_worker:
     build:
@@ -163,10 +190,16 @@ services:
     volumes:
       - shared-temp:/app/tmp
     command: node dist/workers/index.js
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"process.exit(0)\" || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
 
   llm_orchestration_service:
     build:
-      context: ./src/services/llm_orchestration_service
+      context: .
+      dockerfile: src/services/llm_orchestration_service/Dockerfile
     environment:
       - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
@@ -175,6 +208,11 @@ services:
       - postgres
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').getcode()==200 else 1)\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   profile_service:
     build:
@@ -192,13 +230,18 @@ services:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - ASSET_SERVICE_URL=http://asset_service:5001/asset
       - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_REGION=${S3_REGION}
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/healthz || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5000/healthz').getcode()==200 else 1)\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   search_service:
     build:
@@ -223,11 +266,16 @@ services:
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_REGION=${S3_REGION}
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5002/healthz || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5002/healthz').getcode()==200 else 1)\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   s3-server:
     image: minio/minio:latest

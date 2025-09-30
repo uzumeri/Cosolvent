@@ -13,8 +13,8 @@ RUN apt-get update && \
 COPY src/services/profile_service/requirements.txt .
 RUN pip install --default-timeout=120 --no-cache-dir -r requirements.txt
 
-# Copy application code
 COPY src/services/profile_service/ .
+COPY src/core /app/src/core
 
 # Normalize potential CRLF line endings on entrypoint
 RUN sed -i 's/\r$//' entrypoint.sh || true

@@ -14,6 +14,8 @@ const main = async () => {
   const store = await newVectorStore(embedding, "embeddings");
 
   app.route("/healthz", healthzRoutes);
+  app.get("/health", (c) => c.json({ status: "ok" }));
+  app.get("/health", (c) => c.json({ status: "ok" }));
   app.route("/admin", adminRoutes(redis, store));
   app.route("/query", queryRoutes(redis));
 

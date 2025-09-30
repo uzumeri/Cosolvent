@@ -13,8 +13,8 @@ RUN apt-get update && \
 COPY src/services/asset_service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
 COPY src/services/asset_service/ .
+COPY src/core /app/src/core
 
 # Normalize potential CRLF line endings on entrypoint
 RUN sed -i 's/\r$//' entrypoint.sh || true

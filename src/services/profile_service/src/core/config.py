@@ -1,3 +1,4 @@
+from src.core.config import settings  # shared settings for all services
 import os
 from dotenv import load_dotenv
 

@@ -20,6 +20,10 @@ const main = async () => {
 
   app.route("/api/verify", verifyRoutes);
 
+  // Health endpoints
+  app.get("/healthz", (c) => c.json({ status: "ok" }));
+  app.get("/health", (c) => c.json({ status: "ok" }));
+
   return app;
 };
 
