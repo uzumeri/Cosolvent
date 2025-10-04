@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File
 from fastapi.encoders import jsonable_encoder
 from typing import List
+import os
 import json
 import logging
 import httpx
@@ -17,7 +18,8 @@ from src.schema.producer_file_schema import (
     ProducerFileUpdateSchema
 )
 from src.schema.producer_file_schema import ProducerFileSchema
-from src.database.db import get_mongo_service
+import asyncpg
+from src.database.db import get_db
 from src.core.config import settings
 from utils.s3_uploader import upload_file_to_s3
 from utils.openrouter_analyzer import (
@@ -30,7 +32,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/files/{file_id}", response_model=ProducerFileSchema)
-async def get_file_by_id(file_id: str, db=Depends(get_mongo_service)):
+async def get_file_by_id(file_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Retrieves a specific file by its ID.
     """
@@ -40,7 +42,7 @@ async def get_file_by_id(file_id: str, db=Depends(get_mongo_service)):
     return jsonable_encoder(file)
 
 @router.delete("/files/{file_id}", response_model=SuccessResponse)
-async def delete_producer_file(file_id: str, profile_id: str, db=Depends(get_mongo_service)):
+async def delete_producer_file(file_id: str, profile_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Deletes a specific file associated with a producer.
     """
@@ -61,7 +63,7 @@ async def delete_producer_file(file_id: str, profile_id: str, db=Depends(get_mon
 async def update_producer_file(
     file_id: str,
     payload: ProducerFileUpdateSchema,
-    db=Depends(get_mongo_service),
+    db: asyncpg.Pool = Depends(get_db),
 ):
     """
     Updates a file's metadata.
@@ -78,7 +80,7 @@ async def update_producer_file(
 async def update_file(
     file_id: str,
     file: UploadFile= File(...),
-    db=Depends(get_mongo_service),
+    db: asyncpg.Pool = Depends(get_db),
     
 ):  
     s3_url = await upload_file_to_s3(file, file.filename)
@@ -91,7 +93,7 @@ async def update_file(
 
     
 @router.post("/files/{file_id}/generate-metadata")
-async def generate_file_metadata(file_id: str, db=Depends(get_mongo_service)):
+async def generate_file_metadata(file_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Generates AI-powered metadata (description) for a given file.
     Supports images and PDF documents.
@@ -143,19 +145,26 @@ async def generate_file_metadata(file_id: str, db=Depends(get_mongo_service)):
 @router.get("/{profile_id}/files", response_model=List[ProducerFileSchema])
 async def get_files_for_profile(
     profile_id: str,
-    db=Depends(get_mongo_service),
+    db: asyncpg.Pool = Depends(get_db),
 ):
     """
     Retrieves all files associated with a specific producer profile.
     """
     # Fetch files directly by profile_id
-    cursor = db.producer_files.find({"profile_id": profile_id})
-    docs = await cursor.to_list(length=None)
-    files = []
-    for doc in docs:
-        doc['id'] = str(doc['_id'])
-        doc.pop('_id', None)
-        files.append(ProducerFileSchema(**doc))
+    async with db.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM producer_files WHERE profile_id = $1 ORDER BY created_at DESC", profile_id)
+    files = [
+        ProducerFileSchema(
+            id=r["id"],
+            profile_id=r["profile_id"],
+            url=r["url"],
+            file_type=r["file_type"],
+            certification=r.get("certification"),
+            description=r.get("description"),
+            priority=r.get("priority") or 0,
+            privacy=r.get("privacy") or "private",
+        ) for r in rows
+    ]
     return jsonable_encoder(files)
 
 @router.post("/{profile_id}/files", status_code=201, response_model=List[ProducerFileSchema])
@@ -166,7 +175,7 @@ async def upload_files_to_profile(
         ...,
         description="A JSON string representing a list of metadata objects for the uploaded files. Each object must contain 'filename' and 'file_type'. For 'certificate' file_type, 'certification' is also required.",
     ),
-    db=Depends(get_mongo_service),
+    db: asyncpg.Pool = Depends(get_db),
 ):
     """
     Uploads one or more files to an existing producer profile.
@@ -180,13 +189,21 @@ async def upload_files_to_profile(
     if len(files) != len(files_metadata_list):
         raise HTTPException(status_code=400, detail="The number of files must match the number of metadata entries.")
 
-    metadata_map = {meta.get('filename'): meta for meta in files_metadata_list if meta.get('filename')}
+    def _norm(name: str | None) -> str:
+        if not name:
+            return ""
+        # Normalize by basename and lower-case for tolerant matching
+        return os.path.basename(name).strip().lower()
+
+    # Build a tolerant lookup map by normalized filename
+    metadata_map = { _norm(meta.get('filename')): meta for meta in files_metadata_list if meta.get('filename') }
     file_objs: List[ProducerFileSchema] = []
     for file in files:
-        if not file.filename or file.filename not in metadata_map:
+        key = _norm(file.filename)
+        if not file.filename or key not in metadata_map:
             raise HTTPException(status_code=400, detail=f"Metadata for file '{file.filename}' is missing.")
 
-        file_meta = metadata_map[file.filename]
+        file_meta = metadata_map[key]
         file_type = file_meta.get("file_type")
         if not file_type:
             raise HTTPException(status_code=400, detail=f"file_type is missing for file '{file.filename}'.")

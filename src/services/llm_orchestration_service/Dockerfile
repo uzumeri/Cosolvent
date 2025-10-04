@@ -7,15 +7,15 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copy the requirements file into the container at /app
-COPY requirements.txt .
+COPY src/services/llm_orchestration_service/requirements.txt ./requirements.txt
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code into the container at /app
-# Specifically, copy the src directory and config.json
-COPY ./src ./src
-COPY config.json .
+COPY src/services/llm_orchestration_service/src ./src
+COPY src/core /app/src/core
+COPY src/services/llm_orchestration_service/config.json ./config.json
 
 # Make port 80 available to the world outside this container
 EXPOSE 8000

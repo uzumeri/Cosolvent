@@ -1,16 +1,16 @@
 from fastapi import APIRouter, HTTPException, status, Query
 from typing import List
 from pydantic import ValidationError
-from src.schema.search_schema import  SearchResponse, QueryRequest, ProducerSimilarity, IndexRequest
-from src.services.pinecone_service import pinecone_service
+from src.schema.search_schema import SearchResponse, QueryRequest, ProducerSimilarity, IndexRequest
 from src.services.embedding_service import embedding_service
 from src.services.index_service import index_producer
+from src.services.vector_service import vector_service
 router = APIRouter()
 
 @router.post("/index", response_model=dict)
 async def index_producer_data(request: IndexRequest):
     """
-    Index a producer's AI profile and metadata into Pinecone.
+    Index a producer's AI profile and metadata into pgvector.
     Expects JSON body with profile_id and ai_profile.
     """
     try:
@@ -43,24 +43,11 @@ async def search_producers(request: QueryRequest):
         if request.filter_primary_crop:
             filters["primary_crops"] = {"$in": [request.filter_primary_crop]}
 
-        # Perform the query against Pinecone
-        pinecone_matches = pinecone_service.query_vectors(
-            vector=query_vector,
-            top_k=request.top_k,
-            filters=filters if filters else None
-        )
+        rows = await vector_service.query(query_vector, request.top_k, filters if filters else None)
 
-        results: List[ProducerSimilarity] = []
-        for match in pinecone_matches:
-            # Pinecone results are already ordered by score (highest first) by default
-            # Extract only the producer_id (which is the vector 'id') and score
-            if match.id and match.score is not None:
-                results.append(
-                    ProducerSimilarity(
-                        id=match.id, # Map Pinecone's vector ID to id
-                        score=match.score
-                    )
-                )
+        results: List[ProducerSimilarity] = [
+            ProducerSimilarity(id=row["id"], score=row["score"]) for row in rows
+        ]
 
         return SearchResponse(
             success=True,
@@ -80,21 +67,9 @@ async def search_producers(request: QueryRequest):
             detail=f"An unexpected error occurred during search: {str(e)}"
         )
 @router.delete("/search/clear-index")
-async def clear_pinecone_index():
-    """
-    Deletes all vectors from the Pinecone index.
-    """
+async def clear_index():
     try:
-        deleted = pinecone_service.delete_all_vectors()
-        if deleted:
-            return {"success": True, "message": "Pinecone index cleared successfully."}
-        # If delete_all_vectors returns False, raise an error
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to clear Pinecone index"
-        )
+        deleted = await vector_service.delete_all()
+        return {"success": True, "message": f"Index cleared. Deleted {deleted} rows."}
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear Pinecone index: {e}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to clear index: {e}")

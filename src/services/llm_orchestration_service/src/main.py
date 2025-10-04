@@ -6,7 +6,7 @@ from .config.models import AppConfig # Use . for config
 from .core.logging import get_logger
 from pathlib import Path
 import uvicorn
-from .config.mongo_store import seed_config_if_empty
+from .config.pg_store import seed_config_if_empty
 
 logger = get_logger(__name__)
 
@@ -20,7 +20,7 @@ app = FastAPI(
 async def startup_event():
     logger.info("Starting LLM Orchestration Service...")
     await seed_config_if_empty()
-    logger.info("Loading configuration from MongoDB store")
+    logger.info("Loading configuration from Postgres store")
     try:
         initial_config = await load_config()
         logger.info("Configuration loaded successfully.")

@@ -1,12 +1,16 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
+try:
+    from src.core.config import settings as _shared_settings
+except Exception:
+    class _Shim:
+        DATABASE_URL = "postgresql://cosolvent:cosolvent@postgres:5432/cosolvent"
+    _shared_settings = _Shim()  
 
-class AppSettings(BaseSettings):
-    mongodb_uri: str = "mongodb://localhost:27017"
-    mongodb_db: str = "llm_orchestration"
-    mongodb_collection: str = "config"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+class AppSettings:
+    def __init__(self):
+        self.database_url: str = getattr(_shared_settings, "DATABASE_URL", "postgresql://cosolvent:cosolvent@postgres:5432/cosolvent")
+
 
 @lru_cache
 def get_settings() -> AppSettings:

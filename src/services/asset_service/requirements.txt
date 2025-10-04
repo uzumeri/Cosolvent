@@ -2,7 +2,6 @@ fastapi
 pydantic
 httpx
 uvicorn[standard]
-motor
 python-dotenv
 boto3
 python-multipart
@@ -11,4 +10,4 @@ requests
 email-validator
 aiohttp
 PyMuPDF
-pinecone
+asyncpg

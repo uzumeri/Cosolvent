@@ -39,4 +39,4 @@
 
 ## Security & Configuration Tips
 - Copy `.env.example` files and set required secrets locally; do not commit real secrets.
-- Services expect MongoDB/Redis/RabbitMQ/S3 via `docker-compose`. Use the compose stack for parity.
+- Services expect Postgres/Redis/RabbitMQ/S3 via `docker-compose`. Use the compose stack for parity.

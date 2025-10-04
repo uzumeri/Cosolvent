@@ -1,11 +1,18 @@
-import type { Collection, Db } from "mongodb";
-
-export interface SystemPrompt {
-	_id: "system_prompt";
-	prompt: string;
-	updatedAt: Date;
-	createdAt: Date;
+// Deprecated: use Postgres-backed repositories in repositories/promptRepo.ts instead of this file.
+export type Db = unknown;
+export interface Collection<T> {
+  insertOne: (doc: T) => Promise<any>;
+  updateOne: (filter: any, update: any) => Promise<any>;
+  findOne: (filter: any) => Promise<T | null>;
 }
 
-export const getSystemPromptCollection = (db: Db): Collection<SystemPrompt> =>
-	db.collection<SystemPrompt>("system_prompts");
+export interface SystemPrompt {
+  _id: "system_prompt";
+  prompt: string;
+  updatedAt: Date;
+  createdAt: Date;
+}
+
+export const getSystemPromptCollection = (_db: Db): Collection<SystemPrompt> => {
+  throw new Error("SystemPrompt collection removed. Use Postgres repositories instead.");
+};

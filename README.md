@@ -12,12 +12,12 @@ Cosolvent is an MIT-licensed, modular matching engine designed to help â€œthinâ€
 - Services in `src/services/`:
   - `auth_service` (TS/Hono): authentication and session primitives.
   - `industry_context_service` (TS/Hono + workers): context ingestion, vectorization, jobs (Redis/BullMQ).
-  - `llm_orchestration_service` (Python/FastAPI): LLM utilities (e.g., metadata extraction) with config in MongoDB.
+  - `llm_orchestration_service` (Python/FastAPI): LLM utilities (e.g., metadata extraction) with config in Postgres.
   - `profile_service` (Python/FastAPI): profile and template endpoints.
   - `asset_service` (Python/FastAPI): asset ingestion and S3 (MinIO) integration.
   - `search_service` (Python/FastAPI): search/match queries over stored profiles/assets.
   - `reverse_proxy` (Nginx): unified routing across services.
-- Infra via `docker-compose.yml`: MongoDB, Redis, RabbitMQ, MinIO (S3-compatible).
+- Infra via `docker-compose.yml`: Postgres (with pgvector), Redis, RabbitMQ, MinIO (S3-compatible).
 
 See docs for diagrams and details: docs/architecture.md and docs/services/.
 

@@ -1,23 +1,23 @@
 import { Hono } from "hono";
-import { connectToDB } from "./lib/db";
 import connectToRedis from "./lib/redis";
 import healthzRoutes from "./routes/healthz";
 import adminRoutes from "./routes/admin";
 import queryRoutes from "./routes/query";
-import { newPineconeStore } from "./factory/vectorStores";
+import { newVectorStore } from "./factory/vectorStores";
 import { newOpenAIEmbedding } from "./factory/embeddings";
 import env from "./config/env";
 
 const main = async () => {
   const app = new Hono();
-  const db = await connectToDB();
   const redis = await connectToRedis();
   const embedding = newOpenAIEmbedding({});
-  const pinecone = await newPineconeStore(embedding, env.PINECONE_INDEX_NAME);
+  const store = await newVectorStore(embedding, "embeddings");
 
-	app.route("/healthz", healthzRoutes);
-  app.route("/admin", adminRoutes(db, redis, pinecone));
-  app.route("/query", queryRoutes(db, redis));
+  app.route("/healthz", healthzRoutes);
+  app.get("/health", (c) => c.json({ status: "ok" }));
+  app.get("/health", (c) => c.json({ status: "ok" }));
+  app.route("/admin", adminRoutes(redis, store));
+  app.route("/query", queryRoutes(redis));
 
   return app;
 };

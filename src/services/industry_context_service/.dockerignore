@@ -1,0 +1,22 @@
+# Exclude local artifacts from Docker build context
+node_modules
+.pnpm-store
+pnpm-store
+build
+.dist
+coverage
+.DS_Store
+*.log
+*.local
+
+# VCS and IDE
+.git
+.gitignore
+.vscode
+
+# Env
+.env
+.env.*
+
+# OS and misc
+Thumbs.db

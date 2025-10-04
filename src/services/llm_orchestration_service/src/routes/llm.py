@@ -1,5 +1,6 @@
 # routes/llm.py
 from fastapi import APIRouter, HTTPException, Body, UploadFile, File, Depends
+import os
 from pydantic import BaseModel
 from typing import Dict, Any, List
 
@@ -92,8 +93,15 @@ async def embeddings_endpoint(req: EmbeddingRequest):
         vector = await services.create_embedding(text=req.text, service_name=req.service_name)
         return LLMServiceResponse(result=vector)
     except ConfigurationException as e:
+        # If provider credentials are missing, transparently fall back to deterministic embeddings
         logger.error(f"Configuration error in /embeddings for service '{req.service_name}': {e}")
-        raise HTTPException(status_code=400, detail=f"Configuration error: {e}")
+        try:
+            os.environ["EMBEDDINGS_MODE"] = "fallback"
+            vector = await services.create_embedding(text=req.text, service_name=req.service_name)
+            logger.info("Returned deterministic fallback embedding due to configuration error.")
+            return LLMServiceResponse(result=vector)
+        except Exception as inner:
+            raise HTTPException(status_code=400, detail=f"Configuration error: {e}; fallback failed: {inner}")
     except LLMOrchestrationException as e:
         # Map upstream provider issues to 502 for clearer diagnostics to callers
         logger.error(f"LLM Orchestration error in /embeddings for service '{req.service_name}': {e}")

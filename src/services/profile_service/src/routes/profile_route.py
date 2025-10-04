@@ -4,8 +4,8 @@ from typing import List, Optional
 import mimetypes
 import json
 import logging
-from bson.objectid import ObjectId  # type: ignore
 import httpx  # type: ignore
+import asyncpg
 
 from src.database.crud.profile_crud import (
     create_profile,
@@ -29,7 +29,7 @@ from src.schema.profile_schema import (
     ProfileUpdateSchema,
 )
 from src.schema.producer_file_schema import ProducerFileSchema
-from src.database.db import get_mongo_service
+from src.database.db import get_db
 from src.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -42,13 +42,13 @@ async def register_producer(
     payload: ProducerRegisterSchema = Depends(ProducerRegisterSchema.as_form),
     files: List[UploadFile] = File(...),
     files_metadata: Optional[str] = Form(None),
-    db=Depends(get_mongo_service),
+    db: asyncpg.Pool = Depends(get_db),
 ):
     """
     Submits a new producer application.
     """
-    # Parse files metadata: if provided, must be valid JSON array; if missing, synthesize from files
-    files_metadata_list: List[dict] = []
+    # Parse and normalize files metadata so each uploaded file has a matching entry by filename
+    raw_meta_list: List[dict] = []
     if files_metadata is not None:
         try:
             parsed = json.loads(files_metadata)
@@ -56,16 +56,62 @@ async def register_producer(
             raise HTTPException(status_code=400, detail="Invalid JSON in files_metadata.")
         if not isinstance(parsed, list):
             raise HTTPException(status_code=400, detail="files_metadata must be a JSON array.")
-        files_metadata_list = parsed
+        raw_meta_list = parsed
     else:
-        # synthesize minimal metadata matching each file
-        files_metadata_list = [
-            {
-                "filename": f.filename,
-                "file_type": (f.content_type or "unknown").split("/")[0],
-            }
-            for f in files
-        ]
+        raw_meta_list = []
+
+    # Helper to infer a generic file_type when missing
+    def infer_file_type(filename: str, content_type: Optional[str]) -> str:
+        ct = (content_type or "").lower()
+        if ct.startswith("image/"):
+            return "image"
+        if ct.startswith("video/"):
+            return "video"
+        if ct.startswith("audio/"):
+            return "audio"
+        # map common doc types
+        if ct in {"application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}:
+            return "document"
+        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+        if ext in {"jpg", "jpeg", "png", "webp", "gif", "bmp", "tiff"}:
+            return "image"
+        if ext in {"mp4", "mpeg", "avi", "mov", "webm"}:
+            return "video"
+        if ext in {"mp3", "wav", "flac", "aac"}:
+            return "audio"
+        if ext in {"pdf", "doc", "docx", "txt"}:
+            return "document"
+        return "file"
+
+    # Build a normalized metadata list aligned 1:1 with files
+    files_metadata_list: List[dict] = []
+    for idx, f in enumerate(files):
+        base = raw_meta_list[idx] if idx < len(raw_meta_list) else {}
+        # Accept alternate keys then enforce 'filename'
+        name = base.get("filename") or base.get("name") or base.get("fileName")
+        if not name or name != f.filename:
+            base["filename"] = f.filename
+        # Normalize file_type key/value
+        ft = base.get("file_type") or base.get("fileType") or base.get("type")
+        if not ft or not isinstance(ft, str) or not ft.strip():
+            base["file_type"] = infer_file_type(f.filename, f.content_type)
+        else:
+            base["file_type"] = ft
+        # Pass-through certification/priority/privacy if present
+        if "certification" in base and base.get("certification") is None:
+            base.pop("certification", None)
+        # Keep only expected keys to avoid surprises downstream
+        normalized = {
+            "filename": base["filename"],
+            "file_type": base["file_type"],
+        }
+        if "certification" in base:
+            normalized["certification"] = base["certification"]
+        if "priority" in base:
+            normalized["priority"] = base["priority"]
+        if "privacy" in base:
+            normalized["privacy"] = base["privacy"]
+        files_metadata_list.append(normalized)
 
     # Ensure counts match exactly
     if len(files) != len(files_metadata_list):
@@ -173,7 +219,7 @@ async def register_producer(
         status = 400 if 400 <= response.status_code < 500 else 502
         raise HTTPException(status_code=status, detail=detail or "Asset service rejected file upload.")
 
-    # Parse returned file objects and convert to dicts for MongoDB storage
+    # Parse returned file objects and convert to dicts for JSONB storage
     files_data = response.json()
     parsed_files = []
     for item in files_data:
@@ -188,7 +234,8 @@ async def register_producer(
         parsed_files.append(d)
 
     # Update producer record with embedded files
-    await db.producers.update_one({"_id": ObjectId(profile_id)}, {"$set": {"files": parsed_files}})
+    # Persist files JSONB on producer row
+    await update_profile_crud(db, profile_id, {"files": parsed_files})
 
     application = await get_profile(db, profile_id)
     if not application:
@@ -201,7 +248,7 @@ async def register_producer(
 async def update_producer_profile(
     profile_id: str,
     payload: ProfileUpdateSchema = Body(...),
-    db=Depends(get_mongo_service),
+    db: asyncpg.Pool = Depends(get_db),
 ):
     """
     Updates an existing producer profile (both applications and approved producers).
@@ -234,7 +281,7 @@ async def update_producer_profile(
 @router.get("/producer", response_model=ProducerSchema)
 async def read_producer_profile_by_email(
     email: str = Query(..., description="Email of the producer to retrieve"),
-    db=Depends(get_mongo_service)
+    db: asyncpg.Pool = Depends(get_db)
 ):
     """
     Retrieves public-facing information for a specific producer by email.
@@ -246,7 +293,7 @@ async def read_producer_profile_by_email(
 
 
 @router.delete("/{producer_id}", response_model=SuccessResponse)
-async def delete_producer_profile(producer_id: str, db=Depends(get_mongo_service)):
+async def delete_producer_profile(producer_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Performs a 'soft delete' by setting the profile status to suspended.
     """
@@ -261,7 +308,7 @@ async def list_producers(
     status: Optional[str] = Query(None, enum=["active", "suspended"]),
     skip: int = 0,
     limit: int = 100,
-    db=Depends(get_mongo_service)
+    db: asyncpg.Pool = Depends(get_db)
 ):
     """
     Lists approved producers with optional status filtering and pagination.
@@ -270,7 +317,7 @@ async def list_producers(
     return jsonable_encoder(producers)
 
 @router.get("/producers/{producer_id}", response_model=ProducerSchema)
-async def read_producer_profile(producer_id: str, db=Depends(get_mongo_service)):
+async def read_producer_profile(producer_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Retrieves a producer's profile by their ID.
     """
@@ -283,7 +330,7 @@ async def read_producer_profile(producer_id: str, db=Depends(get_mongo_service))
 
 
 @router.post("/profiles/{producer_id}/generate-ai-profile", response_model=SuccessResponse)
-async def generate_ai_profile(producer_id: str, db=Depends(get_mongo_service)):
+async def generate_ai_profile(producer_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Generates an AI-powered profile description and saves it as a draft.
     """
@@ -300,7 +347,7 @@ async def generate_ai_profile(producer_id: str, db=Depends(get_mongo_service)):
 
 
 @router.post("/profiles/{producer_id}/approve-ai-draft", response_model=SuccessResponse)
-async def approve_ai_draft(producer_id: str, db=Depends(get_mongo_service)):
+async def approve_ai_draft(producer_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Approves the AI-generated profile draft, making it the official AI profile.
     """
@@ -321,7 +368,7 @@ async def approve_ai_draft(producer_id: str, db=Depends(get_mongo_service)):
         logger.error(f"Error calling search service index endpoint: {e}")
     return {"success": True, "message": "AI draft approved."}
 
-async def reject_ai_draft(producer_id: str, db=Depends(get_mongo_service)):
+async def reject_ai_draft(producer_id: str, db: asyncpg.Pool = Depends(get_db)):
     """
     Rejects and deletes the current AI profile draft.
     """
@@ -334,7 +381,7 @@ async def reject_ai_draft(producer_id: str, db=Depends(get_mongo_service)):
 async def add_file_to_producer_profile(
     producer_id: str,
     file: ProducerFileSchema = Body(...),
-    db=Depends(get_mongo_service)
+    db: asyncpg.Pool = Depends(get_db)
 ):
     """
     Adds a file to the producer's profile.
@@ -347,7 +394,7 @@ async def add_file_to_producer_profile(
 async def update_file_in_producer_profile(
     producer_id: str,
     file: ProducerFileSchema = Body(...),
-    db=Depends(get_mongo_service)
+    db: asyncpg.Pool = Depends(get_db)
 ):
     """
     Updates a file in the producer's profile.
@@ -360,7 +407,7 @@ async def update_file_in_producer_profile(
 async def remove_file_from_producer_profile(
     producer_id: str,
     file_id: str,
-    db=Depends(get_mongo_service)
+    db: asyncpg.Pool = Depends(get_db)
 ):
     """
     Removes a file from the producer's profile.

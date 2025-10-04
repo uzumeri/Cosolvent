@@ -24,15 +24,24 @@ services:
       retries: 5
       start_period: 10s
 
-  mongodb:
-    image: mongo:6.0
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_DB=cosolvent
+      - POSTGRES_USER=cosolvent
+      - POSTGRES_PASSWORD=cosolvent
     ports:
-      - "27017:27017"
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cosolvent -d cosolvent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      app_network:
-        aliases:
-          - mongo
-          - mongodb
+      - app_network
 
 
   # ─── Frontend ─────────────────────────────────────────────────
@@ -42,7 +51,7 @@ services:
       context: ./frontend
     ports:
       - "3000:3000"
-    environment:
+    env_file:
       - ./frontend/.env
     networks:
       - app_network
@@ -66,6 +75,11 @@ services:
       - search_service
     networks:
       - app_network
+    healthcheck:
+        test: ["CMD-SHELL", "curl -f http://localhost/healthz || exit 1"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
 
   # ─── Application Services ─────────────────────────────────────────────────
 
@@ -76,9 +90,16 @@ services:
     depends_on:
       - redis
       - rabbitmq
-      - mongodb
+      - postgres
+    ports:
+      - "8003:8003"
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8003/healthz').getcode()==200 else 1)\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   asset_service:
     build:
@@ -86,37 +107,47 @@ services:
       dockerfile: src/services/asset_service/Dockerfile
     environment:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-      - MONGO_URI=mongodb://mongodb:27017
+      - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_REGION=${S3_REGION}
     ports:
       - "5001:5001"  # Expose asset service on port 5001
     depends_on:
       - redis
       - rabbitmq
-      - mongodb
+      - postgres
       - s3-server
     env_file:
       - .env
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5001/healthz || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5001/healthz').getcode()==200 else 1)\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   auth_service:
     build:
       context: src/services/auth_service
       dockerfile: Dockerfile
     depends_on:
-      - mongodb
+      - postgres
     networks:
       - app_network
     env_file:
       - .env
       - ./src/services/auth_service/.env
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017
+      - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8020/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   industry_context_service:
     build:
@@ -124,17 +155,22 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - redis
-      - mongodb
+      - postgres
     env_file:
       - .env
       - ./src/services/industry_context_service/.env
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - MONGODB_URI=mongodb://mongodb:27017
+      - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
     networks:
       - app_network
     volumes:
       - shared-temp:/app/tmp
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8004/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   industry_context_worker:
     build:
@@ -142,32 +178,41 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - redis
-      - mongodb
+      - postgres
     env_file:
       - .env
       - ./src/services/industry_context_service/.env
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - MONGODB_URI=mongodb://mongodb:27017
+      - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
     networks:
       - app_network
     volumes:
       - shared-temp:/app/tmp
     command: node dist/workers/index.js
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"process.exit(0)\" || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
 
   llm_orchestration_service:
     build:
-      context: ./src/services/llm_orchestration_service
+      context: .
+      dockerfile: src/services/llm_orchestration_service/Dockerfile
     environment:
-      - mongodb_uri=mongodb://mongodb:27017
-      - mongodb_db=administration
-      - mongodb_collection=config
+      - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - EMBEDDINGS_MODE=${EMBEDDINGS_MODE:-fallback}
     depends_on:
-      - mongodb
+      - postgres
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').getcode()==200 else 1)\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   profile_service:
     build:
@@ -176,7 +221,7 @@ services:
     depends_on:
       - redis
       - rabbitmq
-      - mongodb
+      - postgres
     ports:
       - "5000:5000"  # Expose profile service on port 500
     env_file:
@@ -184,14 +229,19 @@ services:
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - ASSET_SERVICE_URL=http://asset_service:5001/asset
-      - MONGODB_URI=mongodb://mongodb:27017
+      - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_REGION=${S3_REGION}
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/healthz || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5000/healthz').getcode()==200 else 1)\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   search_service:
     build:
@@ -200,14 +250,14 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     ports:
       - "5002:5002"
       # Expose search service on port 500
-      # If you truly depend on redis or mongodb in search_service, keep them; otherwise you can omit:
-      # redis:
-      #   condition: service_healthy
-      # mongodb:
-      #   condition: service_healthy
+  # If you truly depend on redis in search_service, keep it; otherwise you can omit:
+  # redis:
+  #   condition: service_healthy
     networks:
       - app_network
     env_file:
@@ -215,11 +265,17 @@ services:
       - src/services/search_service/.env
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_REGION=${S3_REGION}
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5002/healthz || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5002/healthz').getcode()==200 else 1)\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   s3-server:
     image: minio/minio:latest
@@ -271,3 +327,4 @@ volumes:
   rabbitmq_data:
   shared-temp:
     driver: local
+  pg_data:

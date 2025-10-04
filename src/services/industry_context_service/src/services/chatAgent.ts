@@ -2,7 +2,7 @@ import env from "@/config/env";
 import { newOpenAIEmbedding } from "@/factory/embeddings";
 import { newOpenAIChatModel } from "@/factory/llms";
 import { newLangGraphMemory } from "@/factory/memorys";
-import { newPineconeStore } from "@/factory/vectorStores";
+import { newVectorStore } from "@/factory/vectorStores";
 import createRetrieveTool from "@/utils/retrieve";
 import {
 	AIMessage,
@@ -25,20 +25,17 @@ const memory = newLangGraphMemory();
 const embedding = newOpenAIEmbedding({
 	modelName: "text-embedding-3-small",
 });
-const pineconeIndex = await newPineconeStore(
-	embedding,
-	env.PINECONE_INDEX_NAME,
-);
+const vectorIndex = await newVectorStore(embedding, "embeddings");
 const model = newOpenAIChatModel({
 	modelName: "gpt-4o",
 });
-const retrieveTool = createRetrieveTool(pineconeIndex);
+const retrieveTool = createRetrieveTool(vectorIndex);
 
 // trim messages to manage overflow
 const trimmer = trimMessages({
 	maxTokens: 1000,
 	strategy: "last",
-	tokenCounter: (msgs) => msgs.length,
+	tokenCounter: (msgs: any[]) => msgs.length,
 	includeSystem: true,
 	allowPartial: true,
 	startOn: "human",

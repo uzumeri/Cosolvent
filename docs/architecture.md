@@ -6,16 +6,16 @@ Cosolvent is a polyglot microservice system orchestrated via Docker Compose. It 
 
 ## Components
 - Frontend (Next.js): User-facing UI for onboarding, exploration, and match workflows.
-- Auth Service (TS/Hono): Authentication/session primitives backed by MongoDB.
+- Auth Service (TS/Hono): Authentication/session primitives backed by Postgres.
 - Industry Context Service (TS/Hono + workers): Ingests domain content, enriches via LLM/embeddings, queues jobs with Redis/BullMQ.
-- LLM Orchestration Service (Python/FastAPI): Utilities for LLM tasks (e.g., metadata extraction), configuration persisted in MongoDB.
+- LLM Orchestration Service (Python/FastAPI): Utilities for LLM tasks (e.g., metadata extraction), configuration persisted in Postgres.
 - Profile Service (Python/FastAPI): Profile CRUD and template endpoints.
 - Asset Service (Python/FastAPI): Asset ingestion, storage to MinIO (S3-compatible), and metadata enrichment.
 - Search Service (Python/FastAPI): Query and matching over profiles/assets.
 - Reverse Proxy (Nginx): Path-based routing to services.
 
 ## Infrastructure
-- MongoDB: system of record for users, profiles, assets, and configuration.
+- Postgres (with pgvector): system of record for users, profiles, assets, configuration, and vector search.
 - Redis: job queue backing (BullMQ) and caching.
 - RabbitMQ: event and task distribution where required.
 - MinIO: S3-compatible object storage for asset files.
