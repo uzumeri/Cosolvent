@@ -80,10 +80,15 @@ export default function ConfigPage() {
                                 {Object.entries(client.providers).map(([pId, provider]: [string, any]) => (
                                     <div key={pId} className="grid grid-cols-2 gap-4 items-end">
                                         <div className="space-y-2">
-                                            <Label className="text-xs text-slate-500">{pId} Model</Label>
+                                            <Label className="text-xs text-slate-500">Model ID</Label>
                                             <Input
                                                 value={provider.model}
-                                                disabled
+                                                onChange={(e) => {
+                                                    const newConfig = { ...config };
+                                                    newConfig.clients[id].providers[pId].model = e.target.value;
+                                                    setConfig(newConfig);
+                                                }}
+                                                placeholder="e.g. openai/gpt-5, anthropic/claude-3.5-sonnet"
                                                 className="bg-slate-900 border-slate-700"
                                             />
                                         </div>

@@ -1,6 +1,7 @@
 import type { Session } from "@/store/authStore";
 import type { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
-import axiosInstance from "./axios";
+
+const INTERNAL_API_BASE_URL = process.env.INTERNAL_API_BASE_URL || "http://localhost";
 
 export const getSession = async (
 	cookies: ReadonlyRequestCookies,
@@ -11,11 +12,15 @@ export const getSession = async (
 		throw new Error("Session token not found");
 	}
 
-	const response = await axiosInstance.get<Session>("/api/auth/get-session", {
+	const response = await fetch(`${INTERNAL_API_BASE_URL}/api/auth/get-session`, {
 		headers: {
 			cookie: `better-auth.session_token=${sessionToken}`,
 		},
 	});
 
-	return response.data;
+	if (!response.ok) {
+		throw new Error(`Session validation failed: ${response.status}`);
+	}
+
+	return response.json();
 };
