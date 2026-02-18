@@ -15,26 +15,19 @@ class VectorService:
 
     async def upsert(self, _id: str, embedding: List[float], metadata: Dict[str, Any]) -> None:
         pool = await self._pool_or_create()
-        region = metadata.get("region")
-        certifications = metadata.get("certifications") or []
-        primary_crops = metadata.get("primary_crops") or []
         values = "[" + ",".join(str(float(x)) for x in embedding) + "]"
         async with pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO embeddings (id, embedding, region, certifications, primary_crops)
-                VALUES ($1, $2::vector, $3, $4::text[], $5::text[])
+                INSERT INTO participant_embeddings (id, embedding, metadata)
+                VALUES ($1, $2::vector, $3::jsonb)
                 ON CONFLICT (id) DO UPDATE SET
                   embedding = EXCLUDED.embedding,
-                  region = EXCLUDED.region,
-                  certifications = EXCLUDED.certifications,
-                  primary_crops = EXCLUDED.primary_crops
+                  metadata = EXCLUDED.metadata
                 """,
                 _id,
                 values,
-                region,
-                certifications,
-                primary_crops,
+                json.dumps(metadata),
             )
 
     async def query(self, embedding: List[float], top_k: int, filters: Optional[Dict[str, Any]] = None):
@@ -42,20 +35,17 @@ class VectorService:
         values = "[" + ",".join(str(float(x)) for x in embedding) + "]"
         where = []
         args = [values]
+        
+        # Generic JSONB filtering using @> (contains) or other operators
         if filters:
-            if (r := filters.get("region")):
-                where.append("region = $" + str(len(args) + 1))
-                args.append(r)
-            if (c := filters.get("certifications")) and isinstance(c, dict) and "$in" in c:
-                where.append("certifications && $" + str(len(args) + 1))
-                args.append(c["$in"])  # array overlap
-            if (p := filters.get("primary_crops")) and isinstance(p, dict) and "$in" in p:
-                where.append("primary_crops && $" + str(len(args) + 1))
-                args.append(p["$in"])
+            # We assume filters is a dict that should match against metadata
+            where.append("metadata @> $" + str(len(args) + 1) + "::jsonb")
+            args.append(json.dumps(filters))
+            
         where_sql = (" WHERE " + " AND ".join(where)) if where else ""
         sql = f"""
             SELECT id, 1 - (embedding <#> $1::vector) AS score
-            FROM embeddings
+            FROM participant_embeddings
             {where_sql}
             ORDER BY embedding <#> $1::vector ASC
             LIMIT {int(top_k)}
@@ -67,8 +57,7 @@ class VectorService:
     async def delete_all(self) -> int:
         pool = await self._pool_or_create()
         async with pool.acquire() as conn:
-            res = await conn.execute("DELETE FROM embeddings")
-            # res like 'DELETE 123'
+            res = await conn.execute("DELETE FROM participant_embeddings")
             return int(res.split()[-1])
 
 

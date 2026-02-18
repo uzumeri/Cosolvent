@@ -93,3 +93,25 @@ CREATE TABLE IF NOT EXISTS system_prompts (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Generic Participants table for any market
+CREATE TABLE IF NOT EXISTS participants (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL, -- e.g., 'exporter', 'importer', 'developer'
+  email TEXT UNIQUE,
+  data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Generic Participant Embeddings (mapping to participants table)
+CREATE TABLE IF NOT EXISTS participant_embeddings (
+  id TEXT PRIMARY KEY REFERENCES participants(id) ON DELETE CASCADE,
+  embedding vector(1536),
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb, -- Store filterable fields here
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_participant_embeddings_vec ON participant_embeddings USING ivfflat (embedding vector_l2_ops) WITH (lists = 100);
+CREATE INDEX IF NOT EXISTS idx_participant_embeddings_meta ON participant_embeddings USING gin (metadata);

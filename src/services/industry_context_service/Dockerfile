@@ -14,8 +14,7 @@ FROM base AS prod-deps
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml* ./
 
 # Use Docker cache for node_modules
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-	pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --no-frozen-lockfile
 
 # ---- Build stage ----
 FROM base AS build
@@ -23,8 +22,7 @@ FROM base AS build
 COPY . .
 
 # Use Docker cache for dependencies
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-	pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 RUN pnpm run build
 

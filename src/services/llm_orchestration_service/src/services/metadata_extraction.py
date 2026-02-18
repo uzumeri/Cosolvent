@@ -82,7 +82,19 @@ async def extract_textual_metadata_from_file(file: UploadFile, service_name: str
         raise ValueError(f"Provider '{metadata_llm_provider_name}' for metadata extraction is not configured.")
 
     metadata_llm_client = await get_llm_provider_client(service_cfg.client, metadata_llm_provider_cfg)
-    metadata_llm_template = proc_cfg.get("metadata_llm_prompt_template", "{text}")
+    
+    # --- PROMPT REGISTRY MIGRATION ---
+    from ..config.pg_store import _pool_or_create
+    pool = await _pool_or_create()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT prompt FROM system_prompts WHERE id = 'metadata_extraction'")
+        if row:
+            metadata_llm_template = row["prompt"]
+            logger.info("Using metadata_extraction prompt from system_prompts registry.")
+        else:
+            metadata_llm_template = proc_cfg.get("metadata_llm_prompt_template", "{text}")
+    # ---------------------------------
+
     final_prompt = metadata_llm_template.format(vlm_output=text_content_for_llm, file_name=file.filename)
     metadata_llm_params = proc_cfg.get("metadata_llm_params", {})
 

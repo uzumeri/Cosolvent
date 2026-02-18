@@ -1,60 +1,88 @@
-# Cosolvent — Thin-Market Matching Engine (v0.1 Beta)
+# Cosolvent — Thin-Market Automation Framework (TMAF)
 
-Cosolvent is an MIT-licensed, modular matching engine designed to help “thin” markets become “thicker.” Instead of teams reinventing market-matching primitives, Cosolvent exposes reusable services and Pydantic/Zod models you can adopt directly or extend. The system targets marketplaces where participants and listings are scarce, specialized, or distributed, enabling discovery, profiling, and high-signal matching.
+Cosolvent is an MIT-licensed, modular framework designed to automate **Thin Markets**—marketplaces characterized by informational opacity, high transaction costs, and scarce participation. 
 
-## Why Cosolvent
-- Thicken thin markets: bootstrap liquidity by standardizing profiles, assets, and context signals.
-- Reusable primitives: adopt our schemas, queues, and services without building from scratch.
-- Polyglot microservices: Python (FastAPI) and TypeScript (Hono) for flexibility and speed.
+Inspired by the **"Thin Markets: Market Physics and Engineering"** whitepaper, Cosolvent transforms static marketplace software into a dynamic, AI-orchestrated engine that can be tuned by a **Market Engineer** via a centralized control plane.
 
-## Architecture Overview
-- Frontend: Next.js app in `frontend/`.
-- Services in `src/services/`:
-  - `auth_service` (TS/Hono): authentication and session primitives.
-  - `industry_context_service` (TS/Hono + workers): context ingestion, vectorization, jobs (Redis/BullMQ).
-  - `llm_orchestration_service` (Python/FastAPI): LLM utilities (e.g., metadata extraction) with config in Postgres.
-  - `profile_service` (Python/FastAPI): profile and template endpoints.
-  - `asset_service` (Python/FastAPI): asset ingestion and S3 (MinIO) integration.
-  - `search_service` (Python/FastAPI): search/match queries over stored profiles/assets.
-  - `reverse_proxy` (Nginx): unified routing across services.
-- Infra via `docker-compose.yml`: Postgres (with pgvector), Redis, RabbitMQ, MinIO (S3-compatible).
+---
 
-See docs for diagrams and details: docs/architecture.md and docs/services/.
+## 🚀 Key Framework Concepts
 
-## Quickstart
-Prereqs: Docker & Docker Compose. For local-only service dev, Node 20+ (TS), Python 3.11+ (FastAPI), pnpm.
+### 1. Functional Slots (The Architecture)
+Cosolvent is built around "Slots" that separate the **Market Physics** (rules) from the **Intelligence** (logic) and **Context** (data).
+- **Intelligence Slot**: Centralized LLM orchestration. Edit models, API keys, and parameters (temperature, max tokens) globally.
+- **Context Slot (Authoritative Knowledge Base)**: Grounds AI agents in "curated truth." Ingests PDFs and whitepapers via a RAG pipeline to eliminate domain opacity.
+- **Market Physics Slot**: Defines the "rules of the game" via dynamic participant schemas. Swap from "Coffee Exporters" to "DevOps Talent" by updating a JSON definition in the UI.
+- **Agent Slot**: Asynchronous brokerage agents that handle persistence, negotiation, and long-running deal flows (v0.6).
+- **Extension Slot (MCP)**: Pluggable Model Context Protocol servers that give the marketplace "hands" (e.g., real-time pricing tools, Drive ingestion).
 
-1) Configure environment
-- Copy root `.env.example` to `.env` and fill values.
-- Copy per-service `.env.example` files where present.
+### 2. Prompt-First Business Logic
+Instead of hard-coded valuation or matching rules, Cosolvent uses a **System Prompt Registry**. You can edit the "Core Code" of your marketplace—extraction templates, match rationales, and agent personas—directly in the **Admin Cockpit**.
 
-2) Run the full stack
+### 3. Preserving Heterogeneity
+Unlike traditional marketplaces that force participants into narrow forms, Cosolvent uses **pgvector** and high-dimensional embeddings to match unique, complex profiles based on their true latent features.
+
+---
+
+## 🏗️ Microservices Overview (`src/services/`)
+
+| Service               | Port   | Description                                                                                |
+| :-------------------- | :----- | :----------------------------------------------------------------------------------------- |
+| **Admin Service**     | `8003` | The framework's Control Plane. Manages Registry, Market Physics, and MCP configs.          |
+| **LLM Orchestration** | `8000` | AI utility layer. Fetches prompts from the Registry to perform extraction and generation.  |
+| **Profile Service**   | `5000` | Manages generic **Participants**. Uses a flexible JSONB schema to support any market type. |
+| **Search Service**    | `5002` | **pgvector** search engine. Refactored for dynamic metadata filtering (zero schema-lock).  |
+| **Industry Context**  | `8004` | RAG pipeline & MCP Discovery. Provides the "Authoritative Grounding" for the AI.           |
+| **Asset Service**     | `5001` | Secure file ingestion (Images/PDFs) with S3 (MinIO) integration.                           |
+| **Auth Service**      | `8020` | Unified authentication and RBAC session management.                                        |
+| **Reverse Proxy**     | `80`   | Nginx-based unified API gateway with rate-limiting and security headers.                   |
+
+---
+
+## 📊 Infrastructure
+- **Postgres + pgvector**: Unified storage for structured data and semantic embeddings.
+- **Redis**: Caching and background job orchestration (BullMQ).
+- **RabbitMQ**: Asynchronous message bus for cross-service events.
+- **MinIO**: S3-compatible object storage for participant assets.
+
+---
+
+## 🛠️ Quickstart
+
+### Prerequisites
+- **Docker & Docker Compose**
+- **Environment**: Copy `.env.example` to `.env` and provide your LLM API keys.
+
+### Booting the Engine
 ```bash
 docker compose up --build
 ```
-Frontend on `http://localhost:3000`. Services as defined in `docker-compose.yml` (e.g., profiles on `:5000`, search on `:5002`).
 
-3) Develop a single service
-- Frontend: `cd frontend && pnpm install && pnpm dev`
-- TS service (e.g., auth): `pnpm dev` (or `pnpm build && pnpm start`)
-- Python service (e.g., profile): `uvicorn main:app --reload --port 5000`
+### Accessing the Dashboard
+- **Admin Cockpit**: `http://localhost:3000/admin`
+  - *Note: Access requires the "admin" role. Use the built-in Auth Service to provision users.*
+- **API Documentation**:
+  - Admin (Control Plane): `http://localhost:8003/admin/docs`
+  - LLM (Data Plane): `http://localhost:8000/docs`
 
-## Data Models
-- Python DTOs: Pydantic models per service (profiles, assets, match requests/results, configs).
-- TypeScript DTOs: Zod schemas for validation and shared typing.
-Adopt these as-is or extend; keep names consistent across services to enable cross-service matching.
+---
 
-## Contributing
-Follow coding conventions and PR guidance in AGENTS.md. TS code uses Biome (`pnpm lint`, `pnpm format`); Python follows PEP 8. Include tests for new endpoints where feasible (pytest or Hono testing utilities).
+## 🔌 Extending the Framework
 
-## Roadmap
-- v0.1 Beta: core profiling, asset ingestion, LLM metadata, basic search, auth primitives.
-- Upcoming: richer scoring functions, active-learning feedback loops, marketplace UX templates, and multi-tenant packaging.
+Cosolvent is designed for **zero-downtime evolution**:
+1. **New Market?** Create a new **Participant Schema** in the Market Physics tab.
+2. **New Logic?** Update the relevant prompt in the **Prompt Studio**.
+3. **New Data?** Connect an **MCP Server** (e.g., a GDrive folder of industry reports) in the MCP Slots tab.
 
-## License
-MIT — see LICENSE.
+---
 
-## Further Reading
-- Architecture: docs/architecture.md
-- Microservices: docs/services/
-- Use cases: docs/use-cases.md
+## 🗺️ Roadmap
+- [x] **v0.5 Framework Core**: Admin cockpit, Prompt Registry, Generic Participant abstraction.
+- [ ] **v0.6 Agentic Brokerage**: Implementation of autonomous deal-making agents.
+- [ ] **v0.7 Full MCP Orchestration**: Dynamic tool execution for market discovery.
+- [ ] **v0.8 Synthetic Liquidity**: Integration with **ClientSynth** for market bootstrapping.
+
+---
+
+## 📜 License
+MIT — See `LICENSE` for details.

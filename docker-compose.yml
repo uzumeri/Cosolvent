@@ -18,7 +18,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
+      test: [ "CMD", "rabbitmqctl", "status" ]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -36,13 +36,12 @@ services:
       - pg_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cosolvent -d cosolvent"]
+      test: [ "CMD-SHELL", "pg_isready -U cosolvent -d cosolvent" ]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - app_network
-
 
   # ─── Frontend ─────────────────────────────────────────────────
 
@@ -56,7 +55,6 @@ services:
     networks:
       - app_network
 
-
   # ─── Reverse Proxy ────────────────────────────────────────────────
 
   reverse_proxy:
@@ -66,20 +64,27 @@ services:
     volumes:
       - ./src/services/reverse_proxy/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - admin_service
-      - asset_service
-      - auth_service
-      - industry_context_service
-      - llm_orchestration_service
-      - profile_service
-      - search_service
+      admin_service:
+        condition: service_healthy
+      asset_service:
+        condition: service_healthy
+      auth_service:
+        condition: service_healthy
+      industry_context_service:
+        condition: service_healthy
+      llm_orchestration_service:
+        condition: service_healthy
+      profile_service:
+        condition: service_healthy
+      search_service:
+        condition: service_healthy
     networks:
       - app_network
     healthcheck:
-        test: ["CMD-SHELL", "curl -f http://localhost/healthz || exit 1"]
-        interval: 30s
-        timeout: 10s
-        retries: 3
+      test: [ "CMD-SHELL", "curl -f http://localhost/healthz || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ─── Application Services ─────────────────────────────────────────────────
 
@@ -96,7 +101,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8003/healthz').getcode()==200 else 1)\""]
+      test: [ "CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8003/healthz').getcode()==200 else 1)\"" ]
       interval: 20s
       timeout: 5s
       retries: 5
@@ -114,7 +119,7 @@ services:
       - S3_ENDPOINT=${S3_ENDPOINT}
       - S3_REGION=${S3_REGION}
     ports:
-      - "5001:5001"  # Expose asset service on port 5001
+      - "5001:5001" # Expose asset service on port 5001
     depends_on:
       - redis
       - rabbitmq
@@ -125,7 +130,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5001/healthz').getcode()==200 else 1)\""]
+      test: [ "CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5001/healthz').getcode()==200 else 1)\"" ]
       interval: 20s
       timeout: 5s
       retries: 5
@@ -144,7 +149,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://cosolvent:cosolvent@postgres:5432/cosolvent
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8020/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      test: [ "CMD-SHELL", "node -e \"fetch('http://localhost:8020/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"" ]
       interval: 20s
       timeout: 5s
       retries: 5
@@ -167,7 +172,7 @@ services:
     volumes:
       - shared-temp:/app/tmp
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8004/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      test: [ "CMD-SHELL", "node -e \"fetch('http://localhost:8004/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"" ]
       interval: 20s
       timeout: 5s
       retries: 5
@@ -191,7 +196,7 @@ services:
       - shared-temp:/app/tmp
     command: node dist/workers/index.js
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"process.exit(0)\" || exit 1"]
+      test: [ "CMD-SHELL", "node -e \"process.exit(0)\" || exit 1" ]
       interval: 1m
       timeout: 10s
       retries: 3
@@ -209,7 +214,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').getcode()==200 else 1)\""]
+      test: [ "CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').getcode()==200 else 1)\"" ]
       interval: 20s
       timeout: 5s
       retries: 5
@@ -223,7 +228,7 @@ services:
       - rabbitmq
       - postgres
     ports:
-      - "5000:5000"  # Expose profile service on port 500
+      - "5000:5000" # Expose profile service on port 500
     env_file:
       - .env
     environment:
@@ -238,7 +243,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5000/healthz').getcode()==200 else 1)\""]
+      test: [ "CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5000/healthz').getcode()==200 else 1)\"" ]
       interval: 20s
       timeout: 5s
       retries: 5
@@ -255,9 +260,9 @@ services:
     ports:
       - "5002:5002"
       # Expose search service on port 500
-  # If you truly depend on redis in search_service, keep it; otherwise you can omit:
-  # redis:
-  #   condition: service_healthy
+      # If you truly depend on redis in search_service, keep it; otherwise you can omit:
+      # redis:
+      #   condition: service_healthy
     networks:
       - app_network
     env_file:
@@ -272,7 +277,7 @@ services:
       - S3_ENDPOINT=${S3_ENDPOINT}
       - S3_REGION=${S3_REGION}
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5002/healthz').getcode()==200 else 1)\""]
+      test: [ "CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5002/healthz').getcode()==200 else 1)\"" ]
       interval: 20s
       timeout: 5s
       retries: 5
@@ -290,7 +295,7 @@ services:
     command: server /data --console-address ":9001"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://s3-server:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://s3-server:9000/minio/health/live" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -321,6 +326,7 @@ services:
 
 networks:
   app_network:
+
 
 volumes:
   s3-data:

@@ -67,10 +67,12 @@ export default function SignInPage() {
 		if (status === "success") {
 			if (callbackUrl) {
 				router.push(callbackUrl);
+				return;
 			}
 
 			if (data?.user.role === "admin") {
 				router.push("/admin");
+				return;
 			}
 
 			router.push("/user");
