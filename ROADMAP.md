@@ -1,5 +1,11 @@
 # CosolventAI ↔ Whitepaper Alignment Roadmap
 
+> **⚠️ DEPRECATED (February 22, 2026)**
+> **This roadmap and the CosolventAI repository are no longer active.** Development has consolidated on the [`cosolvent-beta`](https://github.com/DeeperPoint/cosolvent-beta) repository. Valuable ideas from this roadmap have been extracted and integrated into `cosolvent-beta/ROADMAP.md`. This document is retained for historical reference only.
+>
+> **Active roadmap:** `cosolvent-beta/ROADMAP.md`
+> **Master integration plan:** `MarketForge/ForgeRoadMap.md`
+
 > **Source whitepaper:** `tm-reference_CL4_V4.md` — *Thin Markets: A Deep Dive into Market Physics and Engineering*  
 > **Supplemental references:** `tm-reference-supplemental_1_V5.md`, `tm-reference-supplemental_2_V5.md`, `Middle Powers Trade Strategy & AI.md`  
 > **Repository assessed:** CosolventAI (this repo)  
